@@ -37,9 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'cloudinary_storage',
     'cloudinary',
+    'django.contrib.staticfiles',
     'user',
     'travel',
     'rest_framework',
@@ -86,32 +86,27 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-"""""
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        "NAME": os.getenv("POSTGRES_DB", "tfg_db"),
-        "USER": os.getenv("POSTGRES_USER", "angel"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "angel"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+if os.environ.get('DATABASE_URL'):
+    # Producción (Render)
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600
+        )
     }
-}
-"""
-
-import dj_database_url
-import os
-
-# Al final del archivo o donde tengas DATABASES:
-DATABASES = {
-    'default': dj_database_url.config(
-        # Si no encuentra la variable de Render, usa SQLite (para tu PC)
-        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'),
-        conn_max_age=600
-    )
-}
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
+else:
+    # Local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'tfg_db'),
+            'USER': os.getenv('POSTGRES_USER', 'angel'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'angel'),
+            'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -173,9 +168,9 @@ import cloudinary.uploader
 import cloudinary.api
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
+    'CLOUD_NAME': os.environ.get('dudliookp'),
+    'API_KEY': os.environ.get('867447551763412'),
+    'API_SECRET': os.environ.get('unFLFRKQKM4RofhSgbXmfrxNbQ8')
 }
 
 # Reemplazar el backend de almacenamiento
