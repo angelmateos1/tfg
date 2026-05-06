@@ -84,6 +84,7 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+"""""
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -94,8 +95,19 @@ DATABASES = {
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
+"""
 
+import dj_database_url
+import os
 
+# Al final del archivo o donde tengas DATABASES:
+DATABASES = {
+    'default': dj_database_url.config(
+        # Si no encuentra la variable de Render, usa SQLite (para tu PC)
+        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'),
+        conn_max_age=600
+    )
+}
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
