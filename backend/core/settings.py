@@ -168,9 +168,9 @@ import cloudinary.uploader
 import cloudinary.api
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('dudliookp'),
-    'API_KEY': os.environ.get('867447551763412'),
-    'API_SECRET': os.environ.get('unFLFRKQKM4RofhSgbXmfrxNbQ8')
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
 # Reemplazar el backend de almacenamiento

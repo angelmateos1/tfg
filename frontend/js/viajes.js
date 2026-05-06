@@ -315,8 +315,8 @@ function abrirDetalleViaje(viajeId) {
         
         // IMPORTANTE: verificar que data.rutas existe y tiene elementos
         let itinerario = '';
-        if (data.rutas && data.rutas.length > 0 && data.rutas[0].intinerary) {
-            itinerario = data.rutas[0].intinerary;
+        if (data.rutas && data.rutas.length > 0 && data.rutas[0].itinerary) {
+            itinerario = data.rutas[0].itinerary;
         }
         document.getElementById('itinerario-texto').value = itinerario;
         
@@ -430,7 +430,7 @@ function abrirDetalleViaje(viajeId) {
         document.getElementById('modal-fechas').textContent = `${inicio} - ${fin}`;
         
         // Itinerario
-        const itinerario = data.rutas.length > 0 ? data.rutas[0].intinerary : '';
+        const itinerario = data.rutas.length > 0 ? data.rutas[0].itinerary : '';
         document.getElementById('itinerario-texto').value = itinerario;
         
         // Cargar monumentos
