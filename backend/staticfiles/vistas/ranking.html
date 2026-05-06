@@ -1,0 +1,57 @@
+<link rel="stylesheet" href="/static/ranking.css">
+
+<div class="ranking-dashboard">
+
+    <div class="ranking-topbar">
+        <h1 class="titulo-pagina">🏆 Ranking de Viajeros</h1>
+        <button class="btn-volver" onclick="cerrarVista()">← Volver al inicio</button>
+    </div>
+
+    <!-- MI POSICIÓN -->
+    <div class="mi-posicion-card" id="mi-posicion-card">
+        <div class="mi-pos-numero" id="mi-pos-numero">#—</div>
+        <div class="mi-avatar" id="mi-avatar">?</div>
+        <div class="mi-datos">
+            <h2 id="mi-nombre">Tú</h2>
+            <div class="mi-stats">
+                <span id="mi-paises">— países</span>
+                <span id="mi-monumentos">— monumentos</span>
+                <span class="badge-puntos" id="mi-puntos">— puntos</span>
+            </div>
+        </div>
+        <div class="mi-pos-label">
+            <span>Tu posición</span>
+            <strong id="mi-pos-grande">#—</strong>
+        </div>
+    </div>
+
+    <!-- FILTRO -->
+    <div class="ranking-filtros">
+        <button class="filtro-btn active" id="btn-global" onclick="mostrarGlobal()">🌍 Global</button>
+        <button class="filtro-btn" id="btn-amigos" onclick="mostrarAmigos()">👥 Amigos</button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="ranking-card">
+        <h3 class="ranking-tabla-titulo" id="ranking-titulo">Tabla de Clasificación</h3>
+        <div class="ranking-lista" id="ranking-lista">
+            <p class="text-muted-r">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- SISTEMA DE PUNTOS -->
+    <div class="ranking-card puntuacion-card">
+        <h3>Sistema de Puntuación</h3>
+        <ul>
+            <li>Cada país visitado: <strong class="pts-blue">10 puntos</strong></li>
+            <li>Cada monumento visitado: <strong class="pts-blue">1 punto</strong></li>
+        </ul>
+        <p class="puntuacion-desc">
+            Compite con tus amigos para ver quién ha explorado más del mundo. ¡Sigue viajando para subir en el ranking!
+        </p>
+    </div>
+
+</div>
+
+<script src="/static/js/config.js"></script>
+<script src="/static/js/ranking.js"></script>

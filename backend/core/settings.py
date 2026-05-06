@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary_storage',
+    'cloudinary',
     'user',
     'travel',
     'rest_framework',
@@ -164,3 +166,17 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'travelquest.info1@gmail.com'
 EMAIL_HOST_PASSWORD = 'fgdc owda frsl kktw'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# Cloudinary para media files
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
+}
+
+# Reemplazar el backend de almacenamiento
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

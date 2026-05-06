@@ -117,7 +117,7 @@ class DetalleViajeView(APIView):
         rutas_data = [{
             'id': r.id,
             'name': r.name,
-            'itinerary': r.itinerary
+            'itinerary': r.itinerary  # ← CRÍTICO: debe coincidir con el modelo
         } for r in rutas]
 
         serializer = TravelSerializer(viaje)
@@ -129,18 +129,22 @@ class DetalleViajeView(APIView):
     def patch(self, request, viaje_id):
         """Actualizar itinerario manualmente"""
         viaje = get_object_or_404(Travel, id=viaje_id, user=request.user)
-        nombre = request.data.get('nombre', 'Mi itinerario')
-        itinerario = request.data.get('itinerario', '')
+        
+        # IMPORTANTE: el campo se llama 'itinerario' en el request
+        itinerario_texto = request.data.get('itinerario', '').strip()
 
-        # Actualizar o crear ruta
+        if not itinerario_texto:
+            return Response({"error": "El itinerario no puede estar vacío"}, status=400)
+
+        # Buscar o crear ruta para este viaje
         ruta, created = Route.objects.update_or_create(
             travel=viaje,
-            name=nombre,
-            defaults={'itinerary': itinerario}
+            name=f"Itinerario - {viaje.destination}",
+            defaults={'itinerary': itinerario_texto}  # ← guardar en el campo correcto
         )
 
         return Response({
-            "mensaje": "Itinerario guardado",
+            "mensaje": "Itinerario guardado correctamente",
             "ruta": {
                 'id': ruta.id,
                 'name': ruta.name,
