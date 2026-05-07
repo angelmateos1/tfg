@@ -34,7 +34,9 @@ class PerfilView(APIView):
             })
 
         amistades = Amistad.objects.filter(usuario=user).select_related('amigo')
-        foto_url = request.build_absolute_uri(user.foto_perfil.url) if user.foto_perfil else None
+        
+        # ✅ FIX: Usar directamente .url que devuelve la URL de Cloudinary
+        foto_url = user.foto_perfil.url if user.foto_perfil else None
 
         return Response({
             "username": user.username,
@@ -51,14 +53,112 @@ class PerfilView(APIView):
 
     def patch(self, request):
         user = request.user
-        user.first_name = request.data.get('first_name', user.first_name)
-        user.last_name = request.data.get('last_name', user.last_name)
-        user.bio = request.data.get('bio', user.bio)
+        
+        # ✅ DEBUG: Ver qué llega
+        print("\n" + "="*50)
+        print("🔍 PATCH /perfil/")
+        print("="*50)
+        print(f"📋 request.data: {dict(request.data)}")
+        print(f"📁 request.FILES: {dict(request.FILES)}")
+        print(f"🔧 Content-Type: {request.content_type}")
+        print(f"🔧 Parser classes: {self.parser_classes}")
+        
+        # Actualizar campos de texto
+        if 'first_name' in request.data:
+            user.first_name = request.data.get('first_name', '').strip()
+            print(f"✏️ Actualizando first_name: {user.first_name}")
+        
+        if 'last_name' in request.data:
+            user.last_name = request.data.get('last_name', '').strip()
+            print(f"✏️ Actualizando last_name: {user.last_name}")
+        
+        if 'bio' in request.data:
+            user.bio = request.data.get('bio', '').strip()
+            print(f"✏️ Actualizando bio: {user.bio[:50]}...")
+        
+        # Actualizar foto
         if 'foto_perfil' in request.FILES:
-            user.foto_perfil = request.FILES['foto_perfil']
-        user.save()
-        return Response({"mensaje": "Perfil actualizado"})
+            foto = request.FILES['foto_perfil']
+            print(f"\n📸 FOTO RECIBIDA:")
+            print(f"   - Nombre: {foto.name}")
+            print(f"   - Tamaño: {foto.size} bytes")
+            print(f"   - Content-Type: {foto.content_type}")
+            
+            # Verificar storage antes de guardar
+            from django.core.files.storage import default_storage
+            print(f"\n🔧 STORAGE CONFIG:")
+            print(f"   - Default storage: {default_storage.__class__.__name__}")
+            print(f"   - Module: {default_storage.__class__.__module__}")
+            
+            user.foto_perfil = foto
+            user.save()
+            
+            print(f"\n✅ FOTO GUARDADA:")
+            print(f"   - URL: {user.foto_perfil.url}")
+            print(f"   - Name: {user.foto_perfil.name}")
+            print(f"   - Storage: {user.foto_perfil.storage.__class__.__name__}")
+        else:
+            print("⚠️ No se recibió archivo 'foto_perfil' en request.FILES")
+        
+        print("="*50 + "\n")
+        
+        # Devolver respuesta
+        foto_url = user.foto_perfil.url if user.foto_perfil else None
+        
+        return Response({
+            "mensaje": "Perfil actualizado",
+            "foto_perfil": foto_url,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "bio": user.bio
+        })
 
+
+class RankingView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from travel.models import Travel, Monument
+
+        def calcular_puntos(user):
+            paises = Travel.objects.filter(user=user).values('country_code').distinct().count()
+            monumentos = Monument.objects.filter(travel__user=user).count()
+            return (paises * 10) + (monumentos * 1), paises, monumentos
+
+        # Todos los usuarios
+        todos = User.objects.all()
+        ranking = []
+        for u in todos:
+            puntos, paises, monumentos = calcular_puntos(u)
+            # ✅ FIX: Usar directamente .url
+            foto_url = u.foto_perfil.url if u.foto_perfil else None
+            ranking.append({
+                "id": u.id,
+                "username": u.username,
+                "foto_perfil": foto_url,
+                "paises": paises,
+                "monumentos": monumentos,
+                "puntos": puntos,
+            })
+
+        ranking.sort(key=lambda x: x['puntos'], reverse=True)
+
+        # Posición del usuario actual
+        mi_posicion = next((i+1 for i, r in enumerate(ranking) if r['id'] == request.user.id), None)
+        mi_datos = next((r for r in ranking if r['id'] == request.user.id), None)
+
+        # IDs de amigos
+        amigos_ids = set(
+            Amistad.objects.filter(usuario=request.user).values_list('amigo_id', flat=True)
+        )
+
+        return Response({
+            "mi_posicion": mi_posicion,
+            "yo": mi_datos,
+            "ranking": ranking,
+            "amigos_ids": list(amigos_ids),
+        })
 
 class AñadirAmigoView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -96,50 +196,6 @@ class EliminarAmigoView(APIView):
         Amistad.objects.filter(usuario_id=amigo_id, amigo=request.user).delete()
         return Response({"mensaje": "Amigo eliminado"})
     
-class RankingView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        from travel.models import Travel, Monument
-
-        def calcular_puntos(user):
-            paises = Travel.objects.filter(user=user).values('country_code').distinct().count()
-            monumentos = Monument.objects.filter(travel__user=user).count()
-            return (paises * 10) + (monumentos * 1), paises, monumentos
-
-        # Todos los usuarios
-        todos = User.objects.all()
-        ranking = []
-        for u in todos:
-            puntos, paises, monumentos = calcular_puntos(u)
-            foto_url = request.build_absolute_uri(u.foto_perfil.url) if u.foto_perfil else None
-            ranking.append({
-                "id": u.id,
-                "username": u.username,
-                "foto_perfil": foto_url,
-                "paises": paises,
-                "monumentos": monumentos,
-                "puntos": puntos,
-            })
-
-        ranking.sort(key=lambda x: x['puntos'], reverse=True)
-
-        # Posición del usuario actual
-        mi_posicion = next((i+1 for i, r in enumerate(ranking) if r['id'] == request.user.id), None)
-        mi_datos = next((r for r in ranking if r['id'] == request.user.id), None)
-
-        # IDs de amigos
-        amigos_ids = set(
-            Amistad.objects.filter(usuario=request.user).values_list('amigo_id', flat=True)
-        )
-
-        return Response({
-            "mi_posicion": mi_posicion,
-            "yo": mi_datos,
-            "ranking": ranking,  # ranking global
-            "amigos_ids": list(amigos_ids),
-        })
     
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
