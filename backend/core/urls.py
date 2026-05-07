@@ -14,4 +14,8 @@ urlpatterns = [
     path('api/', include('travel.urls')),
     path('api/', include('user.urls')),
     path('api/login/', obtain_auth_token, name='api_token_auth'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+] 
+
+if settings.DEBUG:
+    from django.conf.urls.static import static
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
