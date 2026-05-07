@@ -150,12 +150,15 @@ if IS_PRODUCTION:
     
     STORAGES = {
         'default': {
-            'BACKEND': 'cloudinary_storage.storage.RawMediaCloudinaryStorage',
+            'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
         },
         'staticfiles': {
             'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
         },
     }
+
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     
     # Configurar cloudinary.config
     cloudinary.config(
