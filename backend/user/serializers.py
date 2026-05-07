@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import User, Amistad
 
 class AmigoPerfil(serializers.ModelSerializer):
-    foto_perfil = serializers.SerializerMethodField()
+    foto_perfil = serializers.ImageField()
 
     def get_foto_perfil(self, obj):
         if obj.foto_perfil:
