@@ -6,6 +6,9 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import AmistadSerializer
 from .models import User, LogroDefinicion, LogroDesbloqueado, Amistad
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PerfilView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -55,52 +58,52 @@ class PerfilView(APIView):
         user = request.user
         
         # ✅ DEBUG: Ver qué llega
-        print("\n" + "="*50)
-        print("🔍 PATCH /perfil/")
-        print("="*50)
-        print(f"📋 request.data: {dict(request.data)}")
-        print(f"📁 request.FILES: {dict(request.FILES)}")
-        print(f"🔧 Content-Type: {request.content_type}")
-        print(f"🔧 Parser classes: {self.parser_classes}")
+        logger.debug(f"\n{'='*50}")
+        logger.debug("🔍 PATCH /perfil/")
+        logger.debug(f"{'='*50}")
+        logger.debug(f"📋 request.data: {dict(request.data)}")
+        logger.debug(f"📁 request.FILES: {dict(request.FILES)}")
+        logger.debug(f"🔧 Content-Type: {request.content_type}")
+        logger.debug(f"🔧 Parser classes: {self.parser_classes}")
         
         # Actualizar campos de texto
         if 'first_name' in request.data:
             user.first_name = request.data.get('first_name', '').strip()
-            print(f"✏️ Actualizando first_name: {user.first_name}")
+            logger.debug(f"✏️ Actualizando first_name: {user.first_name}")
         
         if 'last_name' in request.data:
             user.last_name = request.data.get('last_name', '').strip()
-            print(f"✏️ Actualizando last_name: {user.last_name}")
+            logger.debug(f"✏️ Actualizando last_name: {user.last_name}")
         
         if 'bio' in request.data:
             user.bio = request.data.get('bio', '').strip()
-            print(f"✏️ Actualizando bio: {user.bio[:50]}...")
+            logger.debug(f"✏️ Actualizando bio: {user.bio[:50]}...")
         
         # Actualizar foto
         if 'foto_perfil' in request.FILES:
             foto = request.FILES['foto_perfil']
-            print(f"\n📸 FOTO RECIBIDA:")
-            print(f"   - Nombre: {foto.name}")
-            print(f"   - Tamaño: {foto.size} bytes")
-            print(f"   - Content-Type: {foto.content_type}")
+            logger.debug(f"\n📸 FOTO RECIBIDA:")
+            logger.debug(f"   - Nombre: {foto.name}")
+            logger.debug(f"   - Tamaño: {foto.size} bytes")
+            logger.debug(f"   - Content-Type: {foto.content_type}")
             
             # Verificar storage antes de guardar
             from django.core.files.storage import default_storage
-            print(f"\n🔧 STORAGE CONFIG:")
-            print(f"   - Default storage: {default_storage.__class__.__name__}")
-            print(f"   - Module: {default_storage.__class__.__module__}")
+            logger.debug(f"\n🔧 STORAGE CONFIG:")
+            logger.debug(f"   - Default storage: {default_storage.__class__.__name__}")
+            logger.debug(f"   - Module: {default_storage.__class__.__module__}")
             
             user.foto_perfil = foto
             user.save()
             
-            print(f"\n✅ FOTO GUARDADA:")
-            print(f"   - URL: {user.foto_perfil.url}")
-            print(f"   - Name: {user.foto_perfil.name}")
-            print(f"   - Storage: {user.foto_perfil.storage.__class__.__name__}")
+            logger.debug(f"\n✅ FOTO GUARDADA:")
+            logger.debug(f"   - URL: {user.foto_perfil.url}")
+            logger.debug(f"   - Name: {user.foto_perfil.name}")
+            logger.debug(f"   - Storage: {user.foto_perfil.storage.__class__.__name__}")
         else:
-            print("⚠️ No se recibió archivo 'foto_perfil' en request.FILES")
+            logger.debug("⚠️ No se recibió archivo 'foto_perfil' en request.FILES")
         
-        print("="*50 + "\n")
+        logger.debug(f"{'='*50}\n")
         
         # Devolver respuesta
         foto_url = user.foto_perfil.url if user.foto_perfil else None
@@ -266,19 +269,20 @@ class SolicitarRecuperacionView(APIView):
 
         # Enviar email
         from django.core.mail import send_mail
+        from django.conf import settings
         
         try:
             send_mail(
                 subject='TravelQuest - Código de recuperación',
                 message=f'Hola {user.username},\n\nTu código de recuperación es: {codigo}\n\nEste código expira en 15 minutos.\n\nSi no solicitaste esto, ignora este mensaje.',
-                from_email=None,
+                from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
                 fail_silently=False,
             )
-            print(f"✉️ Email enviado a {email} con código: {codigo}")  # Para debug
+            logger.info(f"✉️ Email enviado a {email} con código: {codigo}")
         except Exception as e:
-            print(f"❌ Error enviando email: {e}")
-            return Response({"error": "Error al enviar el email"}, status=500)
+            logger.error(f"❌ Error enviando email a {email}: {str(e)}")
+            return Response({"error": f"Error al enviar el email: {str(e)}"}, status=500)
 
         return Response({"mensaje": "Código enviado a tu email"})
 
