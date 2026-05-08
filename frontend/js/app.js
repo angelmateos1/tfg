@@ -433,17 +433,32 @@ function hacerRegistro() {
 }
 
 function mostrarRecuperacion() {
-    document.getElementById('form-login-view').style.display = 'none';
-    document.getElementById('form-registro-view').style.display = 'none';
-    document.getElementById('form-recuperacion-view').style.display = 'block';
+    // Lista de IDs que queremos ocultar/mostrar
+    const vistas = ['form-login-view', 'form-registro-view', 'form-recuperacion-view', 'paso-1-recuperacion', 'paso-2-recuperacion'];
     
-    // Reset formulario
-    document.getElementById('paso-1-recuperacion').style.display = 'block';
-    document.getElementById('paso-2-recuperacion').style.display = 'none';
-    document.getElementById('recup-email').value = '';
-    document.getElementById('recup-codigo').value = '';
-    document.getElementById('recup-nueva-password').value = '';
-    document.getElementById('recuperacion-feedback').textContent = '';
+    vistas.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === 'form-recuperacion-view' || id === 'paso-1-recuperacion') {
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
+    });
+
+    // Lista de inputs que queremos limpiar
+    const inputs = ['recup-email', 'recup-codigo', 'recup-nueva-password', 'recup-nueva-password2'];
+    
+    inputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.value = ''; // Solo lo limpia si existe
+        }
+    });
+
+    const feedback = document.getElementById('recuperacion-feedback');
+    if (feedback) feedback.textContent = '';
 }
 
 function volverAlLogin() {
