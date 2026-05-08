@@ -167,6 +167,9 @@ if IS_PRODUCTION:
         api_secret=os.environ.get('CLOUDINARY_API_SECRET'),
         secure=True
     )
+
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_MANIFEST_STRICT = False
 else:
     # 💻 DESARROLLO (Local): Usar almacenamiento local
     MEDIA_URL = '/media/'
