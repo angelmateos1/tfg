@@ -50,30 +50,31 @@
             
             <div id="registro-feedback" style="margin-top: 10px; font-size: 13px;"></div>
         </div>
-    </div>
-    <!-- FORMULARIO RECUPERACIÓN -->
-    <div id="form-recuperacion-view" style="display: none;">
-        <h2>🔑 Recuperar Contraseña</h2>
-        <p style="color: #64748b; margin-bottom: 30px;">Introduce tu email</p>
-        
-        <div id="paso-1-recuperacion">
-            <input type="email" id="recup-email" placeholder="Tu email">
-            <button class="btn-entrar" onclick="enviarCodigoRecuperacion()">Enviar código</button>
-        </div>
 
-        <div id="paso-2-recuperacion" style="display: none;">
-            <input type="text" id="recup-codigo" placeholder="Código de 6 dígitos" maxlength="6">
-            <input type="password" id="recup-nueva-password" placeholder="Nueva contraseña">
-            <button class="btn-entrar" onclick="verificarCodigoRecuperacion()">Cambiar contraseña</button>
+        <!-- FORMULARIO RECUPERACIÓN -->
+        <div id="form-recuperacion-view" style="display: none;">
+            <h2>🔑 Recuperar Contraseña</h2>
+            <p style="color: #64748b; margin-bottom: 30px;">Introduce tu email</p>
+            
+            <div id="paso-1-recuperacion">
+                <input type="email" id="recup-email" placeholder="Tu email">
+                <button class="btn-entrar" onclick="enviarCodigoRecuperacion()">Enviar código</button>
+            </div>
+
+            <div id="paso-2-recuperacion" style="display: none;">
+                <input type="text" id="recup-codigo" placeholder="Código de 6 dígitos" maxlength="6">
+                <input type="password" id="recup-nueva-password" placeholder="Nueva contraseña">
+                <button class="btn-entrar" onclick="verificarCodigoRecuperacion()">Cambiar contraseña</button>
+            </div>
+            
+            <div class="login-links">
+                <a href="#" onclick="mostrarLogin(); return false;">← Volver al login</a>
+            </div>
+            
+            <div id="recuperacion-feedback" style="margin-top: 10px; font-size: 13px;"></div>
         </div>
-        
-        <div class="login-links">
-            <a href="#" onclick="mostrarLoginForm(); return false;">← Volver al login</a>
-        </div>
-        
-        <div id="recuperacion-feedback" style="margin-top: 10px; font-size: 13px;"></div>
     </div>
-</div>
+    </div>
 
     <div id="appSection" style="display: none;">
         <nav class="navbar">

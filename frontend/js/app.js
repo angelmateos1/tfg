@@ -443,7 +443,6 @@ function mostrarRecuperacion() {
     document.getElementById('recup-email').value = '';
     document.getElementById('recup-codigo').value = '';
     document.getElementById('recup-nueva-password').value = '';
-    document.getElementById('recup-nueva-password2').value = '';
     document.getElementById('recuperacion-feedback').textContent = '';
 }
 
