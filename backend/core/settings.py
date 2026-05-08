@@ -158,7 +158,7 @@ if IS_PRODUCTION:
     }
 
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    
+    STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
     
     # Configurar cloudinary.config
     cloudinary.config(
@@ -171,20 +171,9 @@ else:
     # 💻 DESARROLLO (Local): Usar almacenamiento local
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-    
-    STORAGES = {
-        'default': {
-            'BACKEND': 'django.core.files.storage.FileSystemStorage',
-            'OPTIONS': {
-                'location': MEDIA_ROOT,
-            },
-        },
-        'staticfiles': {
-            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
-        },
-    }
 
-STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
 
 # Configuración de email (Gmail ejemplo)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
