@@ -69,12 +69,12 @@ function cargarPerfil() {
         document.getElementById('edit-apellidos').value = data.last_name || '';
         document.getElementById('edit-bio').value = data.bio || '';
 
-        // Ahora:
+        // Contar logros desbloqueados
         const desbloqueados = data.logros.filter(l => l.desbloqueado).length;
         document.getElementById('stat-logros').textContent = desbloqueados;
         document.getElementById('stat-logros-seccion').textContent = desbloqueados;
 
-        // Y llamar a render con los datos completos:
+        // Renderizar logros
         renderLogros(data.logros);
 
         // Amigos
@@ -88,10 +88,8 @@ function cargarPerfil() {
         .then(mapData => {
             document.getElementById('stat-paises').textContent = mapData.paises?.length || 0;
             document.getElementById('stat-viajes').textContent = mapData.markers?.length || 0;
-        });
-
-        // Logros
-        renderLogros(data.logros);
+        })
+        .catch(err => console.error("Error cargando map-data:", err));
     })
     .catch(err => console.error("Error cargando perfil:", err));
 }
@@ -190,33 +188,48 @@ function toggleEditar() {
 
 function guardarPerfil() {
     const formData = new FormData();
-    formData.append('first_name', document.getElementById('edit-nombre').value);
-    formData.append('last_name', document.getElementById('edit-apellidos').value);
-    formData.append('bio', document.getElementById('edit-bio').value);
+    formData.append('first_name', document.getElementById('edit-nombre').value.trim());
+    formData.append('last_name', document.getElementById('edit-apellidos').value.trim());
+    formData.append('bio', document.getElementById('edit-bio').value.trim());
 
     fetch(`${API_URL}/perfil/`, {
         method: 'PATCH',
         headers: { 'Authorization': `Token ${token}` },
         body: formData
     })
-    .then(res => res.json())
-    .then(() => {
+    .then(res => {
+        if (!res.ok) throw new Error('Error al guardar');
+        return res.json();
+    })
+    .then(data => {
+        console.log("✅ Perfil guardado:", data);
         toggleEditar();
         cargarPerfil();
     })
-    .catch(err => console.error("Error guardando perfil:", err));
+    .catch(err => {
+        console.error("Error guardando perfil:", err);
+        alert('❌ Error al guardar los cambios');
+    });
 }
 
 // ── AMIGOS ─────────────────────────────────────────────────────────────────
 function toggleAñadirAmigo() {
     const form = document.getElementById('form-añadir-amigo');
     form.classList.toggle('oculto-perfil');
-    document.getElementById('input-codigo-amigo').focus();
+    if (!form.classList.contains('oculto-perfil')) {
+        document.getElementById('input-codigo-amigo').focus();
+    }
 }
 
 function añadirAmigo() {
     const codigo = document.getElementById('input-codigo-amigo').value.trim();
     const feedback = document.getElementById('amigo-feedback');
+
+    if (!codigo) {
+        feedback.textContent = '❌ Introduce un código';
+        feedback.style.color = '#ef4444';
+        return;
+    }
 
     fetch(`${API_URL}/amigos/añadir/`, {
         method: 'POST',
@@ -235,19 +248,31 @@ function añadirAmigo() {
             feedback.textContent = '✅ ' + data.mensaje;
             feedback.style.color = '#22c55e';
             document.getElementById('input-codigo-amigo').value = '';
-            cargarPerfil();
+            setTimeout(() => {
+                cargarPerfil();
+                toggleAñadirAmigo();
+            }, 1500);
         }
     })
-    .catch(err => console.error("Error añadiendo amigo:", err));
+    .catch(err => {
+        console.error("Error añadiendo amigo:", err);
+        feedback.textContent = '❌ Error al añadir amigo';
+        feedback.style.color = '#ef4444';
+    });
 }
 
 function eliminarAmigo(amigoId, btn) {
     if (!confirm('¿Eliminar este amigo?')) return;
+    
     fetch(`${API_URL}/amigos/eliminar/${amigoId}/`, {
         method: 'DELETE',
         headers: { 'Authorization': `Token ${token}` }
     })
-    .then(() => btn.closest('.amigo-row').remove())
+    .then(res => {
+        if (res.ok) {
+            btn.closest('.amigo-row').remove();
+        }
+    })
     .catch(err => console.error("Error eliminando amigo:", err));
 }
 

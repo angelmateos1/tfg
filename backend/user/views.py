@@ -57,55 +57,24 @@ class PerfilView(APIView):
     def patch(self, request):
         user = request.user
         
-        # ✅ DEBUG: Ver qué llega
-        logger.debug(f"\n{'='*50}")
-        logger.debug("🔍 PATCH /perfil/")
-        logger.debug(f"{'='*50}")
-        logger.debug(f"📋 request.data: {dict(request.data)}")
-        logger.debug(f"📁 request.FILES: {dict(request.FILES)}")
-        logger.debug(f"🔧 Content-Type: {request.content_type}")
-        logger.debug(f"🔧 Parser classes: {self.parser_classes}")
-        
-        # Actualizar campos de texto
+        # ✅ ACTUALIZAR CAMPOS DE TEXTO
         if 'first_name' in request.data:
             user.first_name = request.data.get('first_name', '').strip()
-            logger.debug(f"✏️ Actualizando first_name: {user.first_name}")
         
         if 'last_name' in request.data:
             user.last_name = request.data.get('last_name', '').strip()
-            logger.debug(f"✏️ Actualizando last_name: {user.last_name}")
         
         if 'bio' in request.data:
             user.bio = request.data.get('bio', '').strip()
-            logger.debug(f"✏️ Actualizando bio: {user.bio[:50]}...")
         
         # Actualizar foto
         if 'foto_perfil' in request.FILES:
             foto = request.FILES['foto_perfil']
-            logger.debug(f"\n📸 FOTO RECIBIDA:")
-            logger.debug(f"   - Nombre: {foto.name}")
-            logger.debug(f"   - Tamaño: {foto.size} bytes")
-            logger.debug(f"   - Content-Type: {foto.content_type}")
-            
-            # Verificar storage antes de guardar
-            from django.core.files.storage import default_storage
-            logger.debug(f"\n🔧 STORAGE CONFIG:")
-            logger.debug(f"   - Default storage: {default_storage.__class__.__name__}")
-            logger.debug(f"   - Module: {default_storage.__class__.__module__}")
-            
             user.foto_perfil = foto
-            user.save()
-            
-            logger.debug(f"\n✅ FOTO GUARDADA:")
-            logger.debug(f"   - URL: {user.foto_perfil.url}")
-            logger.debug(f"   - Name: {user.foto_perfil.name}")
-            logger.debug(f"   - Storage: {user.foto_perfil.storage.__class__.__name__}")
-        else:
-            logger.debug("⚠️ No se recibió archivo 'foto_perfil' en request.FILES")
         
-        logger.debug(f"{'='*50}\n")
+        # ✅ GUARDAR USUARIO
+        user.save()
         
-        # Devolver respuesta
         foto_url = user.foto_perfil.url if user.foto_perfil else None
         
         return Response({
