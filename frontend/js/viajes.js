@@ -734,3 +734,7 @@ function validarMonumento() {
         }
     );
 }
+
+function volverAlMapa() {
+    window.location.href = '/';
+}
