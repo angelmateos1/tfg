@@ -262,21 +262,88 @@ function añadirAmigo() {
 }
 
 function eliminarAmigo(amigoId, btn) {
-    if (!confirm('¿Eliminar este amigo?')) return;
-    
-    fetch(`${API_URL}/amigos/eliminar/${amigoId}/`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Token ${token}` }
-    })
-    .then(res => {
-        if (res.ok) {
-            btn.closest('.amigo-row').remove();
+    mostrarConfirmacionPopup(
+        '¿Eliminar este amigo?',
+        () => {
+            fetch(`${API_URL}/amigos/eliminar/${amigoId}/`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Token ${token}` }
+            })
+            .then(res => {
+                if (res.ok) {
+                    btn.closest('.amigo-row').remove();
+                    mostrarCustomPopup(
+                        '👤 Amigo eliminado',
+                        'El amigo ha sido eliminado correctamente.',
+                        'success'
+                    );
+                } else {
+                    return res.json().then(err => {
+                        throw new Error(err.error || 'Error al eliminar el amigo');
+                    });
+                }
+            })
+            .catch(err => {
+                mostrarCustomPopup(
+                    '❌ Error',
+                    'No se pudo eliminar el amigo.',
+                    'error'
+                );
+            });
         }
-    })
-    .catch(err => console.error("Error eliminando amigo:", err));
+    );
 }
 
 // ── NAVEGACIÓN ─────────────────────────────────────────────────────────────
 function volverAlMapa() {
     window.location.href = '/';
+}
+
+// Popup de confirmación reutilizable
+function mostrarConfirmacionPopup(mensaje, onConfirm) {
+    document.querySelectorAll('.custom-popup.confirm').forEach(p => p.remove());
+
+    const popup = document.createElement('div');
+    popup.className = 'custom-popup confirm';
+
+    popup.innerHTML = `
+        <div class="popup-content">
+            <h4>Confirmar</h4>
+            <p>${mensaje}</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button class="btn-cancelar-popup">Cancelar</button>
+                <button class="btn-confirmar-popup">Confirmar</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    popup.querySelector('.btn-cancelar-popup').onclick = () => popup.remove();
+    popup.querySelector('.btn-confirmar-popup').onclick = () => {
+        popup.remove();
+        onConfirm();
+    };
+}
+
+// Popup de notificación reutilizable
+function mostrarCustomPopup(titulo, mensaje, tipo) {
+    const popup = document.createElement('div');
+    popup.className = `custom-popup ${tipo}`;
+    
+    popup.innerHTML = `
+        <div class="popup-content">
+            <h4>${titulo}</h4>
+            <p>${mensaje}</p>
+            <button onclick="this.parentElement.parentElement.remove()">Aceptar</button>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+        if (document.body.contains(popup)) {
+            popup.remove();
+        }
+    }, 4000);
 }
