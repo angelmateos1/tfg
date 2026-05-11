@@ -2,7 +2,6 @@ let map = null;
 
 // --- 1. INICIALIZACIÓN ---
 window.onload = function() {
-    console.log("Comprobando sesión...");
     const token = localStorage.getItem('sofia_token');
     if (!token) {
         mostrarLogin();
@@ -43,7 +42,6 @@ function mostrarApp() {
 
 
 function hacerLogin() {
-    console.log("Botón pulsado, iniciando proceso...");
 
     const userField = document.getElementById('username');
     const passField = document.getElementById('password');
@@ -79,7 +77,6 @@ function hacerLogin() {
     })
     .then(data => {
         if (!data.token) throw new Error("El servidor no devolvió un token");
-        console.log("Token recibido correctamente");
         localStorage.setItem('sofia_token', data.token);
         mostrarApp(); // ← ya no necesita recarga
     })
@@ -193,7 +190,6 @@ function cargarDatosMapa() {
         return res.json();
     })
     .then(data => {
-        console.log("Datos del mapa recibidos:", data);
 
         // 1️⃣ PRIMERO: Pintar países
         if (data.paises && data.paises.length > 0) {
@@ -276,7 +272,6 @@ function procesarNuevoViaje() {
 let geojsonLayer = null;
 
 function pintarPaisesEnMapa(paisesVisitados) {
-    console.log("🎨 Países a pintar:", paisesVisitados);
 
     const visitados = paisesVisitados.map(p => 
         typeof p === 'string' ? p.toUpperCase() : p.country_code.toUpperCase()
@@ -291,7 +286,6 @@ function pintarPaisesEnMapa(paisesVisitados) {
                 geojsonLayer = null;
             }
 
-            console.log("🗺️ Códigos ISO-3 a buscar:", visitados);
 
             geojsonLayer = L.geoJSON(geojson, {
 
@@ -302,10 +296,6 @@ function pintarPaisesEnMapa(paisesVisitados) {
                     
                     // Si la lista de Django tiene CUALQUIERA de los dos, lo damos por visitado
                     const visitado = visitados.includes(codigo2) || visitados.includes(codigo3);
-                    
-                    if (visitado) {
-                        console.log(`✅ País pintado: ${feature.properties.NAME} (ISO2: ${codigo2} | ISO3: ${codigo3})`);
-                    }
                     
                     return {
                         fillColor: visitado ? '#2563eb' : 'transparent',
