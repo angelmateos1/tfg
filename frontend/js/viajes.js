@@ -567,9 +567,7 @@ function generarItinerarioIA() {
         }
         return res.json();
     })
-    .then(data => {
-        console.log("🤖 Itinerario generado:", data);
-        
+    .then(data => {        
         if (data.itinerario) {
             textarea.value = data.itinerario;
             feedback.textContent = '✅ ' + (data.mensaje || 'Itinerario generado correctamente');
