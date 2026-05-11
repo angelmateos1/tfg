@@ -74,18 +74,21 @@ class ValidarVisitaView(APIView):
         user_lon = float(request.data.get('longitud'))
         distancia = calcular_distancia(user_lat, user_lon, viaje.latitude, viaje.longitude)
 
-        if distancia <= 200:
+        # 🔍 Distancia máxima permitida: 5 km (5000 metros)
+        if distancia <= 5000:
             viaje.is_validated = True
             viaje.save()
             return Response({
+                "validado": True,
                 "mensaje": "¡Visita validada! Estás en el lugar correcto.",
                 "distancia_metros": round(distancia, 2)
             }, status=status.HTTP_200_OK)
         else:
             return Response({
+                "validado": False,
                 "error": "Estás demasiado lejos del lugar.",
                 "distancia_metros": round(distancia, 2)
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_200_OK)
         
 class MisViajesView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -290,7 +293,9 @@ class EliminarMonumentoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, monumento_id):
-        """Eliminar una visita a monumento"""
-        visita = get_object_or_404(Visita, id=monumento_id, user=request.user)
-        visita.delete()
-        return Response({"mensaje": "Visita eliminada"})
+        """Eliminar un monumento de un viaje"""
+        monumento = get_object_or_404(Monument, id=monumento_id)
+        if monumento.travel.user != request.user:
+            return Response({"error": "No autorizado"}, status=403)
+        monumento.delete()
+        return Response({"mensaje": "Monumento eliminado correctamente"})

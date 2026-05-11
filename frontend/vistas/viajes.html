@@ -50,66 +50,64 @@
     </div>
 
     <!-- MODAL DETALLE VIAJE -->
-<!-- MODAL DETALLE VIAJE -->
-<div class="modal-overlay" id="modal-detalle" onclick="cerrarModalDetalle()">
-    <div class="modal-contenido" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h2 id="modal-titulo">Cargando...</h2>
-            <button class="btn-cerrar-modal" onclick="cerrarModalDetalle()">✕</button>
-        </div>
-        <div class="modal-body">
-            <!-- INFO BÁSICA -->
-            <div class="viaje-info-grid">
-                <div class="info-item">
-                    <span class="info-label">📍 Destino</span>
-                    <span class="info-valor" id="modal-destino">—</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">📅 Fechas</span>
-                    <span class="info-valor" id="modal-fechas">—</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">🌍 País</span>
-                    <span class="info-valor" id="modal-pais">—</span>
-                </div>
+    <div class="modal-overlay" id="modal-detalle" onclick="cerrarModalDetalle()">
+        <div class="modal-contenido" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="modal-titulo">Cargando...</h2>
+                <button class="btn-cerrar-modal" onclick="cerrarModalDetalle()">✕</button>
             </div>
-
-            <!-- MONUMENTOS VISITADOS -->
-            <div class="monumentos-seccion">
-                <div class="seccion-header">
-                    <h3>🏛️ Monumentos Visitados</h3>
-                    <button class="btn-añadir-monumento" onclick="toggleFormMonumento()">+ Añadir</button>
+            <div class="modal-body">
+                <!-- INFO BÁSICA -->
+                <div class="viaje-info-grid">
+                    <div class="info-item">
+                        <span class="info-label">📍 Destino</span>
+                        <span class="info-valor" id="modal-destino">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">📅 Fechas</span>
+                        <span class="info-valor" id="modal-fechas">—</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">🌍 País</span>
+                        <span class="info-valor" id="modal-pais">—</span>
+                    </div>
                 </div>
 
-                <!-- Formulario añadir monumento -->
-                <div class="form-monumento oculto-viajes" id="form-monumento">
-                    <input type="text" id="input-nombre-monumento" placeholder="Nombre del monumento (ej: Torre Eiffel)">
-                    <button class="btn-blue" onclick="validarMonumento()">📍 Validar ubicación</button>
-                    <div id="monumento-feedback"></div>
+                <!-- MONUMENTOS VISITADOS -->
+                <div class="monumentos-seccion">
+                    <div class="seccion-header">
+                        <h3>🏛️ Monumentos Visitados</h3>
+                        <button class="btn-añadir-monumento" onclick="toggleFormMonumento()">+ Añadir</button>
+                    </div>
+
+                    <!-- Formulario añadir monumento -->
+                    <div class="form-monumento oculto-viajes" id="form-monumento">
+                        <input type="text" id="input-nombre-monumento" placeholder="Nombre del monumento (ej: Torre Eiffel)">
+                        <button class="btn-blue" onclick="validarMonumento()">📍 Validar ubicación</button>
+                        <div id="monumento-feedback"></div>
+                    </div>
+
+                    <!-- Lista de monumentos -->
+                    <div class="monumentos-lista" id="monumentos-lista">
+                        <p class="text-muted-monumentos">Cargando...</p>
+                    </div>
                 </div>
 
-                <!-- Lista de monumentos -->
-                <div class="monumentos-lista" id="monumentos-lista">
-                    <p class="text-muted-monumentos">Cargando...</p>
+                <!-- ITINERARIO -->
+                <div class="itinerario-seccion">
+                    <h3>📝 Itinerario</h3>
+                    <textarea id="itinerario-texto" placeholder="Escribe aquí tu itinerario día a día..."></textarea>
+                    <div class="itinerario-acciones">
+                        <button class="btn-blue" onclick="guardarItinerario()">💾 Guardar itinerario</button>
+                        <button class="btn-ia" onclick="generarItinerarioIA()">✨ Generar con IA</button>
+                    </div>
+                    <div id="itinerario-feedback"></div>
                 </div>
-            </div>
-
-            <!-- ITINERARIO -->
-            <div class="itinerario-seccion">
-                <h3>📝 Itinerario</h3>
-                <textarea id="itinerario-texto" placeholder="Escribe aquí tu itinerario día a día..."></textarea>
-                <div class="itinerario-acciones">
-                    <button class="btn-blue" onclick="guardarItinerario()">💾 Guardar itinerario</button>
-                    <button class="btn-ia" onclick="generarItinerarioIA()">✨ Generar con IA</button>
-                </div>
-                <div id="itinerario-feedback"></div>
             </div>
         </div>
     </div>
-</div>
 
 </div> <!-- fin viajes-dashboard -->
-</div>
 
 <script src="/static/js/config.js"></script>
 <script src="/static/js/viajes.js"></script>

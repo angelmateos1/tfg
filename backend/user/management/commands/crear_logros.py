@@ -11,7 +11,7 @@ class Command(BaseCommand):
             {'codigo': 'explorador',    'nombre': 'Explorador',     'descripcion': 'Visita 5 países distintos',          'icono': '🗺️'},
             {'codigo': 'trotamundos',   'nombre': 'Trotamundos',    'descripcion': 'Visita 10 países distintos',         'icono': '🌍'},
             {'codigo': 'fotografo',     'nombre': 'Fotógrafo',      'descripcion': 'Sube 10 fotos de viajes',            'icono': '📸'},
-            {'codigo': 'aventurero',    'nombre': 'Aventurero',     'descripcion': 'Valida una visita in situ',          'icono': '🏔️'},
+            {'codigo': 'aventurero',    'nombre': 'Aventurero',     'descripcion': 'Valida una visita',                  'icono': '🏔️'},
             {'codigo': 'social',        'nombre': 'Social',         'descripcion': 'Añade tu primer amigo',              'icono': '👥'},
         ]
 
@@ -34,8 +34,7 @@ class Command(BaseCommand):
         logro_trota = LogroDefinicion.objects.get(codigo='trotamundos')
         logro_aventura = LogroDefinicion.objects.get(codigo='aventurero')
 
-        # 3. ASIGNAMOS LOGROS A LOS USUARIOS DE PRUEBA
-        # --- Para Ángel ---
+        """"
         angel = User.objects.filter(username='angel').first()
         if angel:
             LogroDesbloqueado.objects.get_or_create(user=angel, logro=logro_viaje)
@@ -58,3 +57,5 @@ class Command(BaseCommand):
             self.stdout.write("🌟 Logros asignados a Carlos.")
 
         self.stdout.write(self.style.SUCCESS('¡Todos los logros repartidos con éxito!'))
+
+        """
