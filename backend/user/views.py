@@ -153,8 +153,18 @@ class AñadirAmigoView(APIView):
         if Amistad.objects.filter(usuario=request.user, amigo=amigo).exists():
             return Response({"error": "Ya sois amigos"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Crear amistades bidireccionales
         Amistad.objects.create(usuario=request.user, amigo=amigo)
-        Amistad.objects.create(usuario=amigo, amigo=request.user)  # amistad bidireccional
+        Amistad.objects.create(usuario=amigo, amigo=request.user)
+
+        # ✅ DESBLOQUEAR LOGRO DE AMISTAD para el usuario actual
+        logro_social = LogroDefinicion.objects.filter(codigo='social').first()
+        if logro_social:
+            LogroDesbloqueado.objects.get_or_create(user=request.user, logro=logro_social)
+
+        # ✅ DESBLOQUEAR LOGRO DE AMISTAD para el amigo también
+        if logro_social:
+            LogroDesbloqueado.objects.get_or_create(user=amigo, logro=logro_social)
 
         return Response({"mensaje": f"¡{amigo.username} añadido como amigo!"})
 
