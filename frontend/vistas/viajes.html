@@ -23,9 +23,20 @@
         <div class="card">
             <h3>Nuevo Viaje</h3>
             <div class="form-grid">
-                <div class="form-group">
+                <div class="form-group form-group-destino">
                     <label>Destino</label>
-                    <input type="text" id="input-destino" placeholder="Ej: París, Francia" required>
+                    <div class="destino-input-wrapper">
+                        <input type="text" id="input-destino" placeholder="Ej: París, Francia" required>
+                        <button class="btn-ia" type="button" onclick="toggleRecomendador()">✨ Recomiéndame un destino</button>
+                    </div>
+                    <div class="recomendador-panel oculto-viajes" id="recomendador-panel">
+                        <p class="recomendador-label">¿Qué tipo de viaje buscas?</p>
+                        <div class="recomendador-input-row">
+                            <input type="text" id="input-tipo-viaje" placeholder="Ej: playa, aventura, cultura, romántico..." maxlength="100">
+                            <button class="btn-ia" type="button" onclick="pedirRecomendacionIA()">Buscar</button>
+                        </div>
+                        <div id="recomendador-feedback"></div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Fecha inicio</label>
@@ -51,7 +62,7 @@
 
     <!-- MODAL DETALLE VIAJE -->
     <div class="modal-overlay" id="modal-detalle" onclick="cerrarModalDetalle()">
-        <div class="modal-contenido" onclick="event.stopPropagation()">
+        <div class="modal-contenido" onclick="event.stopPropagagation()">
             <div class="modal-header">
                 <h2 id="modal-titulo">Cargando...</h2>
                 <button class="btn-cerrar-modal" onclick="cerrarModalDetalle()">✕</button>

@@ -97,19 +97,16 @@ function renderViajeCard(v, hoy) {
 
     let estadoBadge = '';
     let estadoClase = '';
-    
-    // NUEVO ORDEN: Primero comprobamos si está validado (es lo más importante)
-    if (v.is_validated) {
-        estadoBadge = '<span class="badge-estado validado">✅ Validado</span>';
-        estadoClase = 'viaje-pasado'; // O la clase CSS que prefieras para validados
-    } else if (esActivo) {
+    if (esActivo) {
         estadoBadge = '<span class="badge-estado activo">🔴 En curso</span>';
         estadoClase = 'viaje-activo';
     } else if (esFuturo) {
         estadoBadge = '<span class="badge-estado futuro">📅 Próximo</span>';
         estadoClase = 'viaje-futuro';
     } else {
-        estadoBadge = '<span class="badge-estado pasado">📍 Visitado (Sin validar)</span>';
+        estadoBadge = v.is_validated 
+            ? '<span class="badge-estado validado">✅ Validado</span>'
+            : '<span class="badge-estado pasado">📍 Visitado</span>';
         estadoClase = 'viaje-pasado';
     }
 
@@ -117,8 +114,7 @@ function renderViajeCard(v, hoy) {
     const finFormato = fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
     let botonesAcciones = '';
-    // Solo mostramos el botón si está activo Y NO está validado todavía
-    if (esActivo && !v.is_validated) {
+    if (esActivo) {
         botonesAcciones += `<button class="btn-validar" onclick="validarViajeHandler(event, ${v.id})">📍 Validar visita</button>`;
     }
     botonesAcciones += `<button class="btn-eliminar" onclick="eliminarViajeHandler(event, ${v.id})">🗑️ Eliminar</button>`;
@@ -166,7 +162,83 @@ function toggleFormulario() {
         document.getElementById('input-inicio').value = '';
         document.getElementById('input-fin').value = '';
         document.getElementById('form-feedback').textContent = '';
+        // Cerrar y limpiar recomendador
+        const panel = document.getElementById('recomendador-panel');
+        if (panel && !panel.classList.contains('oculto-viajes')) {
+            panel.classList.add('oculto-viajes');
+        }
+        document.getElementById('input-tipo-viaje').value = '';
+        document.getElementById('recomendador-feedback').textContent = '';
     }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RECOMENDADOR IA DE DESTINOS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function toggleRecomendador() {
+    const panel = document.getElementById('recomendador-panel');
+    panel.classList.toggle('oculto-viajes');
+
+    if (!panel.classList.contains('oculto-viajes')) {
+        document.getElementById('input-tipo-viaje').focus();
+        document.getElementById('recomendador-feedback').textContent = '';
+    } else {
+        document.getElementById('input-tipo-viaje').value = '';
+        document.getElementById('recomendador-feedback').textContent = '';
+    }
+}
+
+function pedirRecomendacionIA() {
+    const tipoViaje = document.getElementById('input-tipo-viaje').value.trim();
+    const feedback  = document.getElementById('recomendador-feedback');
+
+    if (!tipoViaje) {
+        feedback.textContent = '❌ Escribe el tipo de viaje que buscas';
+        feedback.style.color = '#ef4444';
+        return;
+    }
+
+    feedback.textContent = '✨ Buscando el destino perfecto...';
+    feedback.style.color = '#7c3aed';
+
+    const btnBuscar = document.querySelector('#recomendador-panel .btn-ia');
+    if (btnBuscar) btnBuscar.disabled = true;
+
+    fetch(`${API_URL}/recomendar-destino/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tipo_viaje: tipoViaje })
+    })
+    .then(res => {
+        if (!res.ok) return res.json().then(err => { throw new Error(err.error || 'Error del servidor'); });
+        return res.json();
+    })
+    .then(data => {
+        if (!data.destino) throw new Error('No se recibió ningún destino');
+
+        // Rellenar el campo destino y cerrar el panel
+        document.getElementById('input-destino').value = data.destino;
+        feedback.textContent = `✅ Destino sugerido: ${data.destino}`;
+        feedback.style.color = '#22c55e';
+
+        setTimeout(() => {
+            toggleRecomendador();
+            document.getElementById('input-inicio').focus();
+        }, 1200);
+    })
+    .catch(err => {
+        console.error("Error recomendación IA:", err);
+        feedback.textContent = '❌ ' + err.message;
+        feedback.style.color = '#ef4444';
+    })
+    .finally(() => {
+        if (btnBuscar) btnBuscar.disabled = false;
+    });
 }
 
 function guardarViaje() {
@@ -250,61 +322,96 @@ function guardarViaje() {
 // ACCIONES DE VIAJE
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function validarViajeHandler(event, viajeId) {
-    event.stopPropagation();
+function validarViajeHandler(e, viajeId) {
+    e.stopPropagation();
+    validarViaje(viajeId);
+}
 
+function eliminarViajeHandler(e, viajeId) {
+    e.stopPropagation();
+    eliminarViaje(viajeId);
+}
+
+function eliminarViaje(viajeId) {
+    if (!confirm('¿Seguro que quieres eliminar este viaje?')) return;
+
+    fetch(`${API_URL}/eliminar-viaje/${viajeId}/`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Token ${token}` }
+    })
+    .then(res => {
+        if (res.ok) {
+            cargarViajes();
+        } else {
+            alert('❌ Error al eliminar el viaje');
+        }
+    })
+    .catch(err => {
+        console.error("Error eliminando viaje:", err);
+        alert('❌ Error al eliminar el viaje');
+    });
+}
+
+function validarViaje(viajeId) {
     if (!navigator.geolocation) {
-        mostrarCustomPopup('Error', 'Tu navegador no soporta geolocalización.', 'error');
+        alert('❌ Tu navegador no soporta geolocalización');
         return;
     }
 
-    const btn = event.currentTarget;
-    const mensajeOriginal = btn.innerHTML; 
-    btn.disabled = true;
-    btn.innerHTML = '📍 Obteniendo ubicación...';
+    // Encontrar el botón para actualizar su estado
+    const btn = document.querySelector(`[onclick*="validarViajeHandler(event, ${viajeId})"]`);
+    const mensajeOriginal = btn ? btn.textContent : '📍 Validar visita';
+    if (btn) btn.disabled = true;
+    if (btn) btn.textContent = '📍 Obteniendo ubicación...';
 
     navigator.geolocation.getCurrentPosition(
-        async (position) => {
+        position => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
 
-            btn.innerHTML = '⏳ Validando...';
+            if (btn) btn.textContent = '⏳ Validando...';
 
-            try {
-                const token = localStorage.getItem('sofia_token'); 
-
-                const response = await fetch(`${API_URL}/validar-visita/${viajeId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Token ${token}`
-                    },
-                    body: JSON.stringify({ latitud: lat, longitud: lon })
-                });
+            fetch(`${API_URL}/validar-visita/${viajeId}/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ latitud: lat, longitud: lon })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const distancia = Math.round(data.distancia_metros || 0);
                 
-                const data = await response.json();
-                const distancia = data.distancia_metros ? Math.round(data.distancia_metros) : 0;
-
-                if (data.validado) {
-                    mostrarCustomPopup('¡Éxito!', `✅ ${data.mensaje || 'Visita validada'}. Distancia: ${distancia}m`, 'success');
-                    cargarViajes(); 
+                // El servidor retorna siempre JSON con los campos mensaje o error
+                if (data.mensaje) {
+                    // Éxito - mostrar alert y recargar
+                    alert(`✅ ${data.mensaje}\n📏 Distancia: ${distancia}m`);
+                    cargarViajes();
+                } else if (data.error) {
+                    // Error - mostrar alert pero no recargar
+                    alert(`❌ ${data.error}\n📏 Distancia: ${distancia}m`);
+                    if (btn) btn.textContent = mensajeOriginal;
+                    if (btn) btn.disabled = false;
                 } else {
-                    mostrarCustomPopup('Aviso', `❌ ${data.error || 'No se pudo validar'}. Distancia: ${distancia}m`, 'error');
-                    btn.innerHTML = mensajeOriginal;
-                    btn.disabled = false;
+                    // Respuesta inesperada
+                    alert('❌ Error: respuesta del servidor no válida');
+                    if (btn) btn.textContent = mensajeOriginal;
+                    if (btn) btn.disabled = false;
                 }
-            } catch (error) {
-                console.error("Error validando visita:", error);
-                mostrarCustomPopup('Error', 'Problema de conexión con el servidor.', 'error');
-                btn.innerHTML = mensajeOriginal;
-                btn.disabled = false;
-            }
+            })
+            .catch(err => {
+                console.error("Error validando visita:", err);
+                alert(`❌ Error al validar la visita: ${err.message}`);
+                if (btn) btn.textContent = mensajeOriginal;
+                if (btn) btn.disabled = false;
+            });
         },
-        (error) => {
+        error => {
             console.error("Error geolocalización:", error);
-            mostrarCustomPopup('Error', 'Activa el GPS y da permisos de ubicación.', 'error');
-            btn.innerHTML = mensajeOriginal;
-            btn.disabled = false;
+            alert('❌ No se pudo obtener tu ubicación. Activa el GPS y los permisos de ubicación.');
+            if (btn) btn.textContent = mensajeOriginal;
+            if (btn) btn.disabled = false;
         },
         {
             enableHighAccuracy: true,
@@ -312,136 +419,6 @@ async function validarViajeHandler(event, viajeId) {
             maximumAge: 0
         }
     );
-}
-
-// 2. FUNCIÓN PARA EL POPUP CUSTOM (Vanilla JS)
-function mostrarCustomPopup(titulo, mensaje, tipo) {
-    // Crear contenedor
-    const popup = document.createElement('div');
-    popup.className = `custom-popup ${tipo}`;
-    
-    // Contenido
-    popup.innerHTML = `
-        <div class="popup-content">
-            <h4>${titulo}</h4>
-            <p>${mensaje}</p>
-            <button onclick="this.parentElement.parentElement.remove()">Aceptar</button>
-        </div>
-    `;
-
-    // Añadir al body
-    document.body.appendChild(popup);
-
-    // Auto-eliminar después de 4 segundos
-    setTimeout(() => {
-        if (document.body.contains(popup)) {
-            popup.remove();
-        }
-    }, 4000);
-}
-
-function eliminarViajeHandler(e, viajeId) {
-    e.stopPropagation();
-    mostrarConfirmacionPopup(
-        '¿Seguro que quieres eliminar este viaje?',
-        () => eliminarViaje(viajeId)
-    );
-}
-
-function eliminarViaje(viajeId) {
-    fetch(`${API_URL}/eliminar-viaje/${viajeId}/`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Token ${token}` }
-    })
-    .then(res => {
-        if (res.ok) {
-            // Recargar la lista de viajes para evitar manipulación directa del DOM
-            mostrarCustomPopup(
-                '🗑️ Viaje eliminado',
-                'El viaje ha sido eliminado correctamente.',
-                'success'
-            );
-            setTimeout(() => {
-                cargarViajes();
-            }, 800);
-        } else {
-            return res.json().then(err => {
-                throw new Error(err.error || 'Error al eliminar el viaje');
-            });
-        }
-    })
-    .catch(err => {
-        console.error("Error eliminando viaje:", err);
-        mostrarCustomPopup(
-            '❌ Error',
-            'No se pudo eliminar el viaje.',
-            'error'
-        );
-    });
-}
-
-function eliminarMonumento(monumentoId) {
-    mostrarConfirmacionPopup(
-        '¿Eliminar esta visita?',
-        () => {
-            fetch(`${API_URL}/eliminar-monumento/${monumentoId}/`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Token ${token}` }
-            })
-            .then(res => {
-                if (res.ok) {
-                    mostrarCustomPopup(
-                        '🗑️ Monumento eliminado',
-                        'La visita al monumento ha sido eliminada.',
-                        'success'
-                    );
-                    setTimeout(() => {
-                        cargarMonumentos(viajeActual.id);
-                    }, 800);
-                } else {
-                    return res.json().then(err => {
-                        throw new Error(err.error || 'Error al eliminar el monumento');
-                    });
-                }
-            })
-            .catch(err => {
-                console.error("Error eliminando monumento:", err);
-                mostrarCustomPopup(
-                    '❌ Error',
-                    'No se pudo eliminar el monumento.',
-                    'error'
-                );
-            });
-        }
-    );
-}
-
-// Popup de confirmación reutilizable
-function mostrarConfirmacionPopup(mensaje, onConfirm) {
-    // Elimina otros popups de confirmación si existen
-    document.querySelectorAll('.custom-popup.confirm').forEach(p => p.remove());
-
-    const popup = document.createElement('div');
-    popup.className = 'custom-popup confirm';
-
-    popup.innerHTML = `
-        <div class="popup-content">
-            <h4>Confirmar</h4>
-            <p>${mensaje}</p>
-            <div style="display:flex;gap:10px;justify-content:flex-end;">
-                <button class="btn-cancelar-popup">Cancelar</button>
-                <button class="btn-confirmar-popup">Eliminar</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(popup);
-
-    popup.querySelector('.btn-cancelar-popup').onclick = () => popup.remove();
-    popup.querySelector('.btn-confirmar-popup').onclick = () => {
-        popup.remove();
-        onConfirm();
-    };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -452,8 +429,15 @@ function abrirDetalleViaje(viajeId) {
     fetch(`${API_URL}/viaje/${viajeId}/`, {
         headers: { 'Authorization': `Token ${token}` }
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) {
+            throw new Error('Error al cargar el viaje');
+        }
+        return res.json();
+    })
     .then(data => {
+        console.log("📦 Datos del viaje recibidos:", data);
+        
         viajeActual = data.viaje;
         
         document.getElementById('modal-titulo').textContent = data.viaje.destination;
@@ -465,21 +449,25 @@ function abrirDetalleViaje(viajeId) {
         document.getElementById('modal-fechas').textContent = `${inicio} - ${fin}`;
         
         // Itinerario
-        const itinerario = data.rutas.length > 0 ? data.rutas[0].itinerary : '';
+        let itinerario = '';
+        if (data.rutas && data.rutas.length > 0 && data.rutas[0].itinerary) {
+            itinerario = data.rutas[0].itinerary;
+        }
         document.getElementById('itinerario-texto').value = itinerario;
+        
+        // Limpiar feedback
+        document.getElementById('itinerario-feedback').textContent = '';
+        document.getElementById('monumento-feedback').textContent = '';
         
         // Cargar monumentos
         cargarMonumentos(viajeId);
         
+        // Mostrar modal
         document.getElementById('modal-detalle').classList.add('activo');
     })
     .catch(err => {
         console.error("Error cargando detalle:", err);
-        mostrarCustomPopup(
-            '❌ Error',
-            'Error al cargar el viaje',
-            'error'
-        );
+        alert('❌ Error al cargar el viaje');
     });
 }
 
@@ -567,7 +555,9 @@ function generarItinerarioIA() {
         }
         return res.json();
     })
-    .then(data => {        
+    .then(data => {
+        console.log("🤖 Itinerario generado:", data);
+        
         if (data.itinerario) {
             textarea.value = data.itinerario;
             feedback.textContent = '✅ ' + (data.mensaje || 'Itinerario generado correctamente');
@@ -732,6 +722,30 @@ function validarMonumento() {
         }
     );
 }
+
+function eliminarMonumento(monumentoId) {
+    if (!confirm('¿Eliminar esta visita?')) return;
+
+    fetch(`${API_URL}/eliminar-monumento/${monumentoId}/`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Token ${token}` }
+    })
+    .then(res => {
+        if (res.ok) {
+            cargarMonumentos(viajeActual.id);
+        } else {
+            alert('❌ Error al eliminar el monumento');
+        }
+    })
+    .catch(err => {
+        console.error("Error eliminando monumento:", err);
+        alert('❌ Error al eliminar el monumento');
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════════════════════════════════
 
 function volverAlMapa() {
     window.location.href = '/';

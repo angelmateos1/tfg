@@ -1,7 +1,14 @@
+import os
+from groq import Groq
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+import random
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+
+from django.utils import timezone
 
 from .models import Monument, Route, Travel, Visita
 from .serializers import (
@@ -20,10 +27,7 @@ class TravelViewSet(viewsets.ModelViewSet):
     queryset = Travel.objects.all()
     serializer_class = TravelSerializer 
 
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 
-from django.utils import timezone
 
 class MapStatsView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -163,9 +167,6 @@ class GenerarItinerarioIAView(APIView):
     def post(self, request, viaje_id):
         viaje = get_object_or_404(Travel, id=viaje_id, user=request.user)
         
-        from groq import Groq
-        import os
-
         client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         
         duracion = (viaje.end_date - viaje.start_date).days + 1
@@ -299,3 +300,61 @@ class EliminarMonumentoView(APIView):
             return Response({"error": "No autorizado"}, status=403)
         monumento.delete()
         return Response({"mensaje": "Monumento eliminado correctamente"})
+    
+
+class RecomendarDestinoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        tipo_viaje = request.data.get('tipo_viaje', '').strip()
+        
+        if not tipo_viaje:
+            return Response({"error": "Debes especificar un tipo de viaje."}, status=400)
+
+        # 1. Inicializamos el cliente de Groq usando la clave de tu .env o Render
+        try:
+            client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        except Exception as e:
+            print("Error cargando API Key:", e)
+            return Response({"error": "Error de configuración en el servidor."}, status=500)
+
+        # 2. 🧠 EL CEREBRO: El System Prompt que evita la masificación
+        prompt_sistema = """
+        Eres un experto agente de viajes especializado en turismo sostenible. 
+        Tu misión absoluta es EVITAR LA MASIFICACIÓN TURÍSTICA (overtourism). 
+        Cuando el usuario te pida un tipo de viaje, debes recomendar un destino alternativo, 
+        poco conocido, original y que no sufra de exceso de turistas. 
+        PROHIBIDO recomendar capitales famosas o destinos masificados (ej: París, Venecia, Roma, Bali, Cancún, Kioto).
+        Tu respuesta debe contener ÚNICAMENTE el nombre de la ciudad/región y el país, 
+        en formato 'Destino, País' (ejemplo: 'Gante, Bélgica' o 'Azores, Portugal'). 
+        No añadas saludos, ni introducciones, ni puntos finales. Solo el nombre del lugar.
+        """
+
+        try:
+            # 3. Hacemos la llamada a Groq
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": prompt_sistema
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Busco un destino para este tipo de viaje: {tipo_viaje}"
+                    }
+                ],
+                model="llama-3.3-70b-versatile", # O el modelo rápido que estés usando en Groq
+                temperature=0.8, # Un poco alta para que sea creativo y original
+                max_tokens=20, # Muy pocos tokens para que no se enrolle
+            )
+
+            # 4. Extraemos la respuesta y la limpiamos un poco por seguridad
+            destino_sugerido = chat_completion.choices[0].message.content.strip()
+            destino_sugerido = destino_sugerido.replace('"', '').replace('.', '')
+
+            return Response({"destino": destino_sugerido})
+
+        except Exception as e:
+            # Por si Groq se cae, devuelve un error controlado y no un 500 fatal
+            print(f"Error de conexión con Groq: {e}")
+            return Response({"error": "La IA está descansando. Inténtalo de nuevo."}, status=503)

@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     EliminarMonumentoView, GenerarItinerarioIAView, MapStatsView, MonumentosViajeView, ValidarMonumentoView, ViajeCreateView, ValidarVisitaView, DetalleViajeView,
-    MisViajesView, EliminarViajeView
+    MisViajesView, EliminarViajeView, RecomendarDestinoView
 )
 
 urlpatterns = [
@@ -15,4 +15,5 @@ urlpatterns = [
     path('viaje/<int:viaje_id>/monumentos/', MonumentosViajeView.as_view()),
     path('validar-monumento/', ValidarMonumentoView.as_view()),
     path('eliminar-monumento/<int:monumento_id>/', EliminarMonumentoView.as_view()),
+    path('recomendar-destino/', RecomendarDestinoView.as_view(), name='recomendar-destino'),
 ]
