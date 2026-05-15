@@ -14,7 +14,7 @@ class Command(BaseCommand):
         Monument.objects.all().delete()
         Route.objects.all().delete()
         Travel.objects.all().delete()
-        LogroDefinicion.objects.all().delete()
+        #LogroDefinicion.objects.all().delete()
         LogroDesbloqueado.objects.all().delete()
         Amistad.objects.all().delete()
         User.objects.filter(is_superuser=False).delete() # Mantenemos a los superusuarios por si tienes el tuyo admin
@@ -48,21 +48,11 @@ class Command(BaseCommand):
 
         self.stdout.write("Creando el catálogo de logros...")
         # 1. Creamos las definiciones de los logros en el sistema
-        logro_novato = LogroDefinicion.objects.create(
-            codigo='novato', nombre='Explorador Novato', 
-            descripcion='Haz tu primer viaje.', icono='🌍', puntos=10, meta=1
-        )
-        logro_trotamundos = LogroDefinicion.objects.create(
-            codigo='trotamundos_20', nombre='Trotamundos', 
-            descripcion='Visita 20 países.', icono='🗺️', puntos=50, meta=20
-        )
 
         self.stdout.write("Desbloqueando logros para los usuarios...")
         # 2. Se los asignamos a los usuarios
-        LogroDesbloqueado.objects.create(user=angel, logro=logro_novato)
-        LogroDesbloqueado.objects.create(user=angel, logro=logro_trotamundos)
-        LogroDesbloqueado.objects.create(user=maria, logro=logro_novato)
 
+    
         self.stdout.write("Creando viajes (pasados y futuros)...")
         hoy = timezone.now().date()
 

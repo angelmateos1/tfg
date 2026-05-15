@@ -34,7 +34,7 @@ class Command(BaseCommand):
         logro_trota = LogroDefinicion.objects.get(codigo='trotamundos')
         logro_aventura = LogroDefinicion.objects.get(codigo='aventurero')
 
-        """"
+        
         angel = User.objects.filter(username='angel').first()
         if angel:
             LogroDesbloqueado.objects.get_or_create(user=angel, logro=logro_viaje)
@@ -58,4 +58,4 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS('¡Todos los logros repartidos con éxito!'))
 
-        """
+        
