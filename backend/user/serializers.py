@@ -1,22 +1,22 @@
 from rest_framework import serializers
-from .models import User, Amistad
+from .models import User, Friendship
 
-class AmigoPerfil(serializers.ModelSerializer):
-    foto_perfil = serializers.SerializerMethodField()
+class friendPerfil(serializers.ModelSerializer):
+    profile_picture = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'codigo_amigo', 'foto_perfil']
+        fields = ['id', 'username', 'friendship_code', 'profile_picture']
 
-    def get_foto_perfil(self, obj):
+    def get_profile_picture(self, obj):
         # ✅ Devuelve la URL de Cloudinary directamente
-        if obj.foto_perfil:
-            return obj.foto_perfil.url
+        if obj.profile_picture:
+            return obj.profile_picture.url
         return None
 
-class AmistadSerializer(serializers.ModelSerializer):
-    amigo = AmigoPerfil(read_only=True)
+class FriendshipSerializer(serializers.ModelSerializer):
+    friend = friendPerfil(read_only=True)
 
     class Meta:
-        model = Amistad
-        fields = ['id', 'amigo', 'fecha']
+        model = Friendship
+        fields = ['id', 'friend', 'date']

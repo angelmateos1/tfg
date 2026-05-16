@@ -1,73 +1,72 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 import uuid
+import random
+import string
 
-def generar_codigo_amigo():
+def generar_friendship_code():
     return 'TQ-' + uuid.uuid4().hex[:8].upper()
 
 class User(AbstractUser):
-    codigo_amigo = models.CharField(max_length=20, unique=True, blank=True)
-    foto_perfil = models.ImageField(upload_to='fotos_perfil/', blank=True, null=True)
+    friendship_code = models.CharField(max_length=20, unique=True, blank=True)
+    profile_picture = models.ImageField(upload_to='fotos_perfil/', blank=True, null=True)
     bio = models.TextField(blank=True, default='')
 
     def save(self, *args, **kwargs):
-        if not self.codigo_amigo:
-            codigo = generar_codigo_amigo()
-            while User.objects.filter(codigo_amigo=codigo).exists():
-                codigo = generar_codigo_amigo()
-            self.codigo_amigo = codigo
+        if not self.friendship_code:
+            code = generar_friendship_code()
+            while User.objects.filter(friendship_code=code).exists():
+               code = generar_friendship_code()
+            self.friendship_code = code
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.username
 
-class Amistad(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='amistades')
-    amigo = models.ForeignKey(User, on_delete=models.CASCADE, related_name='amigo_de')
-    fecha = models.DateTimeField(auto_now_add=True)
+class Friendship(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friendships')
+    friend = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend_of')
+    date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('usuario', 'amigo')
+        unique_together = ('user', 'friend')
 
     def __str__(self):
-        return f"{self.usuario.username} → {self.amigo.username}"
+        return f"{self.user.username} → {self.friend.username}"
 
 
-# ─── SISTEMA DE LOGROS ───────────────────────────────────────────────────
 
-class LogroDefinicion(models.Model):
+class Achievement(models.Model):
     """Catálogo de logros disponibles en el juego"""
-    codigo = models.CharField(max_length=50, unique=True)  # 'primer_viaje', 'explorador', etc.
-    nombre = models.CharField(max_length=100)
-    descripcion = models.TextField()
-    icono = models.CharField(max_length=10, default='🏆')  # emoji
+    code = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    icon = models.CharField(max_length=10, default='🏆')
     
     def __str__(self):
-        return self.nombre
+        return self.name
 
-class LogroDesbloqueado(models.Model):
-    """Logros que un usuario ha conseguido"""
+class UnlockedAchievement(models.Model):
+    """Logros que un user ha conseguido"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='logros_desbloqueados')
-    logro = models.ForeignKey(LogroDefinicion, on_delete=models.CASCADE)
-    fecha = models.DateField(auto_now_add=True)
+    achievement = models.ForeignKey(Achievement, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'logro')
+        unique_together = ('user', 'achievement')
 
     def __str__(self):
-        return f"{self.user.username} - {self.logro.nombre}"
+        return f"{self.user.username} - {self.achievement.name}"
     
-import random
-import string
 
-class CodigoRecuperacion(models.Model):
+class RecoveryCode(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    codigo = models.CharField(max_length=6)
-    creado = models.DateTimeField(auto_now_add=True)
-    usado = models.BooleanField(default=False)
+    code = models.CharField(max_length=6)
+    created = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.username} - {self.codigo}"
+        return f"{self.user.username} - {self.code}"
 
     @staticmethod
     def generar_codigo():

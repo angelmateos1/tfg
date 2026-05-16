@@ -1,13 +1,13 @@
 from django.urls import path
 from .views import (
-    EliminarMonumentoView, GenerarItinerarioIAView, MapStatsView, MonumentosViajeView, ValidarMonumentoView, ViajeCreateView, ValidarVisitaView, DetalleViajeView,
+    EliminarMonumentoView, GenerarItinerarioIAView, MapStatsView, MonumentosViajeView, ValidarMonumentoView, ViajeCreateView, ValidarVisitView, DetalleViajeView,
     MisViajesView, EliminarViajeView, RecomendarDestinoView
 )
 
 urlpatterns = [
     path('map-data/', MapStatsView.as_view()),
     path('nuevo-viaje/', ViajeCreateView.as_view()),
-    path('validar-visita/<int:viaje_id>/', ValidarVisitaView.as_view()),
+    path('validar-Visit/<int:viaje_id>/', ValidarVisitView.as_view()),
     path('mis-viajes/', MisViajesView.as_view()),
     path('eliminar-viaje/<int:viaje_id>/', EliminarViajeView.as_view()),
     path('viaje/<int:viaje_id>/', DetalleViajeView.as_view()),

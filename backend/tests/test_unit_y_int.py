@@ -3,16 +3,17 @@ Tests unitarios para TravelQuest
 Ejecutar: python manage.py test test/test
 """
 
+import code
 from django.test import TestCase
 from django.db import IntegrityError
 from datetime import date, timedelta
 
 from user.models import (
-    User, Amistad,
-    LogroDefinicion, LogroDesbloqueado,
-    CodigoRecuperacion,
+    User, Friendship,
+    Achievement, UnlockedAchievement,
+    RecoveryCode,
 )
-from travel.models import Travel, Monument, Visita, Route
+from travel.models import Travel, Monument, Visit, Route
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -23,13 +24,13 @@ def make_user(username='testuser', password='pass1234'):
     return User.objects.create_user(username=username, password=password)
 
 
-def make_logro(codigo='primer_viaje', nombre='Primer Viaje', icono='✈️'):
-    """Crea el logro. Si ya existe (por el signal), lo devuelve."""
-    logro, _ = LogroDefinicion.objects.get_or_create(
-        codigo=codigo,
-        defaults={'nombre': nombre, 'descripcion': 'desc', 'icono': icono}
+def make_logro(code='primer_viaje', name='Primer Viaje',icon='✈️'):
+    """Crea el achievement. Si ya existe (por el signal), lo devuelve."""
+    achievement, _ = Achievement.objects.get_or_create(
+       code=code,
+        defaults={'name': name, 'descripcion': 'desc', 'icono':icon}
     )
-    return logro
+    return achievement
 
 
 def make_travel(user, destination='París', country_code='FR',
@@ -53,8 +54,8 @@ def make_monument(travel, name='Torre Eiffel', description='Monumento icónico',
     )
     
 
-def make_visita(user, monument, rating=5, validated=True):
-    return Visita.objects.create(
+def make_Visit(user, monument, rating=5, validated=True):
+    return Visit.objects.create(
         user=user, monument=monument,
         date=date.today(), rating=rating, validation=validated,
     )
@@ -66,112 +67,112 @@ def make_visita(user, monument, rating=5, validated=True):
 
 class UserCreationTests(TestCase):
 
-    def test_crear_usuario_basico(self):
+    def test_crear_user_basico(self):
         user = make_user('alice')
         self.assertEqual(user.username, 'alice')
         self.assertTrue(user.check_password('pass1234'))
 
-    def test_codigo_amigo_se_genera_automaticamente(self):
+    def test_friendship_code_se_genera_automaticamente(self):
         user = make_user('bob')
-        self.assertTrue(user.codigo_amigo.startswith('TQ-'))
-        self.assertEqual(len(user.codigo_amigo), 11)
+        self.assertTrue(user.friendship_code.startswith('TQ-'))
+        self.assertEqual(len(user.friendship_code), 11)
 
-    def test_codigo_amigo_es_unico_entre_usuarios(self):
+    def test_friendship_code_es_unico_entre_users(self):
         u1 = make_user('u1')
         u2 = make_user('u2')
-        self.assertNotEqual(u1.codigo_amigo, u2.codigo_amigo)
+        self.assertNotEqual(u1.friendship_code, u2.friendship_code)
 
-    def test_codigo_amigo_no_cambia_al_guardar_de_nuevo(self):
+    def test_friendship_code_no_cambia_al_guardar_de_nuevo(self):
         user = make_user('carol')
-        codigo_original = user.codigo_amigo
+        code_original = user.friendship_code
         user.bio = 'Actualizada'
         user.save()
         user.refresh_from_db()
-        self.assertEqual(user.codigo_amigo, codigo_original)
+        self.assertEqual(user.friendship_code, code_original)
 
-    def test_todos_los_codigos_amigo_son_unicos(self):
+    def test_todos_los_codigos_friend_son_unicos(self):
         users = [make_user(f'usr{i}') for i in range(5)]
-        codigos = [u.codigo_amigo for u in users]
-        self.assertEqual(len(codigos), len(set(codigos)))
+        codes = [u.friendship_code for u in users]
+        self.assertEqual(len(codes), len(set(codes)))
 
     def test_bio_vacia_por_defecto(self):
         user = make_user('dave')
         self.assertEqual(user.bio, '')
 
-    def test_foto_perfil_nula_por_defecto(self):
+    def test_profile_picture_nula_por_defecto(self):
         user = make_user('eve')
-        self.assertFalse(bool(user.foto_perfil))
+        self.assertFalse(bool(user.profile_picture))
 
     def test_str_devuelve_username(self):
         user = make_user('frank')
         self.assertEqual(str(user), 'frank')
 
-    def test_dos_usuarios_mismo_username_falla(self):
+    def test_dos_users_mismo_username_falla(self):
         make_user('duplicado')
         with self.assertRaises(Exception):
             make_user('duplicado')
 
-    def test_codigo_amigo_formato_correcto(self):
+    def test_friendship_code_formato_correcto(self):
         user = make_user('george')
-        partes = user.codigo_amigo.split('-')
+        partes = user.friendship_code.split('-')
         self.assertEqual(partes[0], 'TQ')
         self.assertEqual(len(partes[1]), 8)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# AMISTAD
+# Friendship
 # ═══════════════════════════════════════════════════════════════════════════
 
-class AmistadTests(TestCase):
+class FriendshipTests(TestCase):
 
     def setUp(self):
         self.u1 = make_user('u1')
         self.u2 = make_user('u2')
         self.u3 = make_user('u3')
 
-    def test_crear_amistad(self):
-        a = Amistad.objects.create(usuario=self.u1, amigo=self.u2)
+    def test_crear_Friendship(self):
+        a = Friendship.objects.create(user=self.u1, friend=self.u2)
         self.assertIsNotNone(a.pk)
 
-    def test_amistad_campos(self):
-        a = Amistad.objects.create(usuario=self.u1, amigo=self.u2)
-        self.assertEqual(a.usuario, self.u1)
-        self.assertEqual(a.amigo, self.u2)
+    def test_Friendship_campos(self):
+        a = Friendship.objects.create(user=self.u1, friend=self.u2)
+        self.assertEqual(a.user, self.u1)
+        self.assertEqual(a.friend, self.u2)
 
-    def test_amistad_str(self):
-        a = Amistad.objects.create(usuario=self.u1, amigo=self.u2)
+    def test_Friendship_str(self):
+        a = Friendship.objects.create(user=self.u1, friend=self.u2)
         self.assertIn('u1', str(a))
         self.assertIn('u2', str(a))
 
-    def test_amistad_duplicada_falla(self):
-        Amistad.objects.create(usuario=self.u1, amigo=self.u2)
+    def test_Friendship_duplicada_falla(self):
+        Friendship.objects.create(user=self.u1, friend=self.u2)
         with self.assertRaises(IntegrityError):
-            Amistad.objects.create(usuario=self.u1, amigo=self.u2)
+            Friendship.objects.create(user=self.u1, friend=self.u2)
 
-    def test_amistad_inversa_es_posible(self):
-        Amistad.objects.create(usuario=self.u1, amigo=self.u2)
-        a2 = Amistad.objects.create(usuario=self.u2, amigo=self.u1)
+    def test_Friendship_inversa_es_posible(self):
+        Friendship.objects.create(user=self.u1, friend=self.u2)
+        a2 = Friendship.objects.create(user=self.u2, friend=self.u1)
         self.assertIsNotNone(a2.pk)
 
-    def test_eliminar_usuario_elimina_sus_amistades(self):
-        Amistad.objects.create(usuario=self.u1, amigo=self.u2)
+    def test_eliminar_user_elimina_sus_friendships(self):
+        Friendship.objects.create(user=self.u1, friend=self.u2)
         self.u1.delete()
-        self.assertEqual(Amistad.objects.count(), 0)
+        self.assertEqual(Friendship.objects.count(), 0)
 
-    def test_usuario_puede_tener_multiples_amigos(self):
-        Amistad.objects.create(usuario=self.u1, amigo=self.u2)
-        Amistad.objects.create(usuario=self.u1, amigo=self.u3)
-        self.assertEqual(Amistad.objects.filter(usuario=self.u1).count(), 2)
+    def test_user_puede_tener_multiples_friends(self):
+        Friendship.objects.create(user=self.u1, friend=self.u2)
+        Friendship.objects.create(user=self.u1, friend=self.u3)
+        self.assertEqual(Friendship.objects.filter(user=self.u1).count(), 2)
 
-    def test_amistad_tiene_fecha(self):
-        a = Amistad.objects.create(usuario=self.u1, amigo=self.u2)
-        self.assertIsNotNone(a.fecha)
+    def test_Friendship_tiene_date(self):
+        a = Friendship.objects.create(user=self.u1, friend=self.u2)
+        self.assertIsNotNone(a.date)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # TRAVEL
-# El signal dispara al crear Travel e intenta obtener LogroDefinicion
-# con codigo='primer_viaje', así que hay que crearlo antes en setUp.
+# El signal dispara al crear Travel e intenta obtener Achievement
+# concode='primer_viaje', así que hay que crearlo antes en setUp.
 # ═══════════════════════════════════════════════════════════════════════════
 
 class TravelModelTests(TestCase):
@@ -210,12 +211,12 @@ class TravelModelTests(TestCase):
         viaje.refresh_from_db()
         self.assertTrue(viaje.is_validated)
 
-    def test_eliminar_usuario_elimina_viajes(self):
+    def test_eliminar_user_elimina_viajes(self):
         make_travel(self.user)
         self.user.delete()
         self.assertEqual(Travel.objects.count(), 0)
 
-    def test_usuario_puede_tener_multiples_viajes(self):
+    def test_user_puede_tener_multiples_viajes(self):
         make_travel(self.user, destination='París')
         make_travel(self.user, destination='Roma')
         make_travel(self.user, destination='Tokio')
@@ -249,7 +250,7 @@ class TravelModelTests(TestCase):
         viaje = make_travel(self.user, country_code='ESP')
         self.assertEqual(viaje.country_code, 'ESP')
 
-    def test_viaje_sin_usuario_falla(self):
+    def test_viaje_sin_user_falla(self):
         with self.assertRaises(Exception):
             Travel.objects.create(
                 destination='Sevilla', latitude=37.38, longitude=-5.97,
@@ -279,7 +280,7 @@ class MonumentModelTests(TestCase):
         m = make_monument(self.travel)
         self.assertIsNotNone(m.pk)
 
-    def test_str_devuelve_nombre(self):
+    def test_str_devuelve_name(self):
         m = make_monument(self.travel, name='Coliseo')
         self.assertEqual(str(m), 'Coliseo')
 
@@ -310,7 +311,7 @@ class MonumentModelTests(TestCase):
         make_monument(self.travel, name='M3')
         self.assertEqual(Monument.objects.filter(travel=self.travel).count(), 3)
 
-    def test_mismo_nombre_en_viajes_distintos(self):
+    def test_mismo_name_en_viajes_distintos(self):
         u2      = make_user('otro')
         travel2 = make_travel(u2, destination='Roma')
         m1 = make_monument(self.travel, name='X')
@@ -325,10 +326,10 @@ class MonumentModelTests(TestCase):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# VISITA
+# Visit
 # ═══════════════════════════════════════════════════════════════════════════
 
-class VisitaModelTests(TestCase):
+class VisitModelTests(TestCase):
 
     def setUp(self):
         make_logro('primer_viaje')
@@ -336,63 +337,63 @@ class VisitaModelTests(TestCase):
         self.travel   = make_travel(self.user)
         self.monument = make_monument(self.travel)
 
-    def test_crear_visita(self):
-        v = make_visita(self.user, self.monument)
+    def test_crear_Visit(self):
+        v = make_Visit(self.user, self.monument)
         self.assertIsNotNone(v.pk)
 
-    def test_str_contiene_monumento_y_fecha(self):
-        v = make_visita(self.user, self.monument)
+    def test_str_contiene_monumento_y_date(self):
+        v = make_Visit(self.user, self.monument)
         self.assertIn('Torre Eiffel', str(v))
         self.assertIn(str(date.today()), str(v))
 
     def test_validation_false_por_defecto(self):
-        v = Visita.objects.create(
+        v = Visit.objects.create(
             user=self.user, monument=self.monument,
             date=date.today(), rating=3,
         )
         self.assertFalse(v.validation)
 
-    def test_visita_validada(self):
-        v = make_visita(self.user, self.monument, validated=True)
+    def test_Visit_validada(self):
+        v = make_Visit(self.user, self.monument, validated=True)
         self.assertTrue(v.validation)
 
     def test_rating_se_guarda(self):
-        v = make_visita(self.user, self.monument, rating=4)
+        v = make_Visit(self.user, self.monument, rating=4)
         self.assertEqual(v.rating, 4)
 
-    def test_eliminar_usuario_elimina_visitas(self):
-        make_visita(self.user, self.monument)
+    def test_eliminar_user_elimina_Visits(self):
+        make_Visit(self.user, self.monument)
         self.user.delete()
-        self.assertEqual(Visita.objects.count(), 0)
+        self.assertEqual(Visit.objects.count(), 0)
 
-    def test_eliminar_monumento_elimina_visitas(self):
-        make_visita(self.user, self.monument)
+    def test_eliminar_monumento_elimina_Visits(self):
+        make_Visit(self.user, self.monument)
         self.monument.delete()
-        self.assertEqual(Visita.objects.count(), 0)
+        self.assertEqual(Visit.objects.count(), 0)
 
-    def test_usuario_puede_visitar_varios_monumentos(self):
+    def test_user_puede_Visitr_varios_monumentos(self):
         m2 = make_monument(self.travel, name='Louvre')
         m3 = make_monument(self.travel, name='Notre Dame')
-        make_visita(self.user, self.monument)
-        make_visita(self.user, m2)
-        make_visita(self.user, m3)
-        self.assertEqual(Visita.objects.filter(user=self.user).count(), 3)
+        make_Visit(self.user, self.monument)
+        make_Visit(self.user, m2)
+        make_Visit(self.user, m3)
+        self.assertEqual(Visit.objects.filter(user=self.user).count(), 3)
 
-    def test_dos_usuarios_mismo_monumento(self):
+    def test_dos_users_mismo_monumento(self):
         u2 = make_user('user2')
-        make_visita(self.user, self.monument)
-        make_visita(u2,        self.monument)
-        self.assertEqual(Visita.objects.filter(monument=self.monument).count(), 2)
+        make_Visit(self.user, self.monument)
+        make_Visit(u2,        self.monument)
+        self.assertEqual(Visit.objects.filter(monument=self.monument).count(), 2)
 
-    def test_fecha_de_visita(self):
-        v = make_visita(self.user, self.monument)
+    def test_date_de_Visit(self):
+        v = make_Visit(self.user, self.monument)
         self.assertEqual(v.date, date.today())
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ROUTE (itinerario del viaje)
 # Cada viaje tiene UN solo itinerario guardado como Route.
-# El patrón usado en las vistas es update_or_create por nombre.
+# El patrónused en las vistas es update_or_create por name.
 # ═══════════════════════════════════════════════════════════════════════════
 
 class RouteModelTests(TestCase):
@@ -415,7 +416,7 @@ class RouteModelTests(TestCase):
         r = self._make_itinerario()
         self.assertIsNotNone(r.pk)
 
-    def test_str_devuelve_nombre(self):
+    def test_str_devuelve_name(self):
         r = self._make_itinerario()
         self.assertIn(self.travel.destination, str(r))
 
@@ -471,114 +472,114 @@ class RouteModelTests(TestCase):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LOGRO DEFINICION
+#achievement DEFINICION
 # ═══════════════════════════════════════════════════════════════════════════
 
-class LogroDefinicionTests(TestCase):
+class AchievementTests(TestCase):
 
     def test_crear_logro(self):
         l = make_logro()
         self.assertIsNotNone(l.pk)
-        self.assertEqual(l.codigo, 'primer_viaje')
+        self.assertEqual(l.code, 'primer_viaje')
 
-    def test_str_devuelve_nombre(self):
-        l = make_logro(nombre='Explorador')
+    def test_str_devuelve_name(self):
+        l = make_logro(name='Explorador')
         self.assertEqual(str(l), 'Explorador')
 
     def test_icono_por_defecto(self):
-        l = LogroDefinicion.objects.create(
-            codigo='sin_icono', nombre='Test', descripcion='desc'
+        l = Achievement.objects.create(
+           code='sin_icono', name='Test',description='desc'
         )
-        self.assertEqual(l.icono, '🏆')
+        self.assertEqual(l.icon, '🏆')
 
     def test_icono_personalizado(self):
         l = make_logro(icono='🌍')
-        self.assertEqual(l.icono, '🌍')
+        self.assertEqual(l.icon, '🌍')
 
     def test_codigo_unico_falla_con_create(self):
-        LogroDefinicion.objects.create(
-            codigo='unico', nombre='X', descripcion='d'
+        Achievement.objects.create(
+           code='unico', name='X',description='d'
         )
         with self.assertRaises(IntegrityError):
-            LogroDefinicion.objects.create(
-                codigo='unico', nombre='Y', descripcion='d'
+            Achievement.objects.create(
+               code='unico', name='Y',description='d'
             )
 
     def test_get_or_create_no_duplica(self):
-        l1, c1 = LogroDefinicion.objects.get_or_create(
-            codigo='goc', defaults={'nombre': 'A', 'descripcion': 'd'}
+        l1, c1 = Achievement.objects.get_or_create(
+           code='goc', defaults={'name': 'A', 'descripcion': 'd'}
         )
-        l2, c2 = LogroDefinicion.objects.get_or_create(
-            codigo='goc', defaults={'nombre': 'B', 'descripcion': 'd'}
+        l2, c2 = Achievement.objects.get_or_create(
+           code='goc', defaults={'name': 'B', 'descripcion': 'd'}
         )
         self.assertTrue(c1)
         self.assertFalse(c2)
         self.assertEqual(l1.pk, l2.pk)
 
     def test_multiples_logros(self):
-        make_logro(codigo='l1', nombre='Logro 1')
-        make_logro(codigo='l2', nombre='Logro 2')
-        make_logro(codigo='l3', nombre='Logro 3')
-        self.assertEqual(LogroDefinicion.objects.count(), 3)
+        make_logro(code='l1', name='Logro 1')
+        make_logro(code='l2', name='Logro 2')
+        make_logro(code='l3', name='Logro 3')
+        self.assertEqual(Achievement.objects.count(), 3)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# LOGRO DESBLOQUEADO
+#achievement DESBLOQUEADO
 # ═══════════════════════════════════════════════════════════════════════════
 
-class LogroDesbloqueadoTests(TestCase):
+class UnlockedAchievementTests(TestCase):
 
     def setUp(self):
         self.user  = make_user()
         self.logro = make_logro()
 
     def test_desbloquear_logro(self):
-        ld = LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
+        ld = UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
         self.assertIsNotNone(ld.pk)
 
-    def test_str_contiene_usuario_y_logro(self):
-        ld = LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
+    def test_str_contiene_user_y_logro(self):
+        ld = UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
         self.assertIn('testuser',     str(ld))
         self.assertIn('Primer Viaje', str(ld))
 
-    def test_fecha_se_asigna_automaticamente(self):
-        ld = LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
-        self.assertEqual(ld.fecha, date.today())
+    def test_date_se_asigna_automaticamente(self):
+        ld = UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
+        self.assertEqual(ld.date, date.today())
 
     def test_mismo_logro_dos_veces_falla(self):
-        LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
+        UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
         with self.assertRaises(IntegrityError):
-            LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
+            UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
 
-    def test_dos_usuarios_mismo_logro(self):
+    def test_dos_users_mismo_logro(self):
         u2 = make_user('user2')
-        LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
-        ld2 = LogroDesbloqueado.objects.create(user=u2, logro=self.logro)
+        UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
+        ld2 = UnlockedAchievement.objects.create(user=u2,achievement=self.logro)
         self.assertIsNotNone(ld2.pk)
 
-    def test_usuario_multiples_logros(self):
-        l2 = make_logro(codigo='l2', nombre='Logro 2')
-        l3 = make_logro(codigo='l3', nombre='Logro 3')
-        LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
-        LogroDesbloqueado.objects.create(user=self.user, logro=l2)
-        LogroDesbloqueado.objects.create(user=self.user, logro=l3)
-        self.assertEqual(LogroDesbloqueado.objects.filter(user=self.user).count(), 3)
+    def test_user_multiples_logros(self):
+        l2 = make_logro(code='l2', name='Logro 2')
+        l3 = make_logro(code='l3', name='Logro 3')
+        UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
+        UnlockedAchievement.objects.create(user=self.user,achievement=l2)
+        UnlockedAchievement.objects.create(user=self.user,achievement=l3)
+        self.assertEqual(UnlockedAchievement.objects.filter(user=self.user).count(), 3)
 
-    def test_eliminar_usuario_elimina_logros(self):
-        LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
+    def test_eliminar_user_elimina_logros(self):
+        UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
         self.user.delete()
-        self.assertEqual(LogroDesbloqueado.objects.count(), 0)
+        self.assertEqual(UnlockedAchievement.objects.count(), 0)
 
     def test_related_name(self):
-        LogroDesbloqueado.objects.create(user=self.user, logro=self.logro)
+        UnlockedAchievement.objects.create(user=self.user,achievement=self.logro)
         self.assertEqual(self.user.logros_desbloqueados.count(), 1)
 
     def test_get_or_create_no_duplica(self):
-        ld1, c1 = LogroDesbloqueado.objects.get_or_create(
-            user=self.user, logro=self.logro
+        ld1, c1 = UnlockedAchievement.objects.get_or_create(
+            user=self.user,achievement=self.logro
         )
-        ld2, c2 = LogroDesbloqueado.objects.get_or_create(
-            user=self.user, logro=self.logro
+        ld2, c2 = UnlockedAchievement.objects.get_or_create(
+            user=self.user,achievement=self.logro
         )
         self.assertTrue(c1)
         self.assertFalse(c2)
@@ -586,60 +587,60 @@ class LogroDesbloqueadoTests(TestCase):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# CODIGO RECUPERACION
+#code RECUPERACION
 # ═══════════════════════════════════════════════════════════════════════════
 
-class CodigoRecuperacionTests(TestCase):
+class RecoveryCodeTests(TestCase):
 
     def setUp(self):
         self.user = make_user()
 
     def test_generar_codigo_6_caracteres(self):
-        self.assertEqual(len(CodigoRecuperacion.generar_codigo()), 6)
+        self.assertEqual(len(RecoveryCode.generar_codigo()), 6)
 
     def test_generar_codigo_solo_digitos(self):
         for _ in range(20):
-            self.assertTrue(CodigoRecuperacion.generar_codigo().isdigit())
+            self.assertTrue(RecoveryCode.generar_codigo().isdigit())
 
     def test_generar_codigo_es_aleatorio(self):
-        codigos = {CodigoRecuperacion.generar_codigo() for _ in range(30)}
-        self.assertGreater(len(codigos), 1)
+        codes = {RecoveryCode.generar_codigo() for _ in range(30)}
+        self.assertGreater(len(codes), 1)
 
     def test_crear_codigo(self):
-        cr = CodigoRecuperacion.objects.create(user=self.user, codigo='123456')
+        cr = RecoveryCode.objects.create(user=self.user, code='123456')
         self.assertIsNotNone(cr.pk)
 
     def test_usado_false_por_defecto(self):
-        cr = CodigoRecuperacion.objects.create(user=self.user, codigo='000000')
-        self.assertFalse(cr.usado)
+        cr = RecoveryCode.objects.create(user=self.user, code='000000')
+        self.assertFalse(cr.used)
 
     def test_marcar_como_usado(self):
-        cr = CodigoRecuperacion.objects.create(user=self.user, codigo='111111')
-        cr.usado = True
+        cr = RecoveryCode.objects.create(user=self.user, code='111111')
+        cr.used = True
         cr.save()
         cr.refresh_from_db()
-        self.assertTrue(cr.usado)
+        self.assertTrue(cr.used)
 
-    def test_str_contiene_usuario_y_codigo(self):
-        cr = CodigoRecuperacion.objects.create(user=self.user, codigo='999999')
+    def test_str_contiene_user_y_codigo(self):
+        cr = RecoveryCode.objects.create(user=self.user,code='999999')
         self.assertIn('testuser', str(cr))
         self.assertIn('999999',   str(cr))
 
     def test_creado_se_asigna_automaticamente(self):
-        cr = CodigoRecuperacion.objects.create(user=self.user, codigo='222222')
-        self.assertIsNotNone(cr.creado)
+        cr = RecoveryCode.objects.create(user=self.user,code='222222')
+        self.assertIsNotNone(cr.created)
 
-    def test_usuario_multiples_codigos(self):
+    def test_user_multiples_codigos(self):
         for i in range(3):
-            CodigoRecuperacion.objects.create(
-                user=self.user, codigo=f'10000{i}'
+            RecoveryCode.objects.create(
+                user=self.user,code=f'10000{i}'
             )
-        self.assertEqual(CodigoRecuperacion.objects.filter(user=self.user).count(), 3)
+        self.assertEqual(RecoveryCode.objects.filter(user=self.user).count(), 3)
 
-    def test_eliminar_usuario_elimina_codigos(self):
-        CodigoRecuperacion.objects.create(user=self.user, codigo='333333')
+    def test_eliminar_user_elimina_codigos(self):
+        RecoveryCode.objects.create(user=self.user,code='333333')
         self.user.delete()
-        self.assertEqual(CodigoRecuperacion.objects.count(), 0)
+        self.assertEqual(RecoveryCode.objects.count(), 0)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -653,9 +654,9 @@ class IntegrationTests(TestCase):
         self.user   = make_user('viajero')
         self.travel = make_travel(self.user, destination='Tokio', country_code='JP')
 
-    def test_flujo_completo_viaje_monumento_visita(self):
+    def test_flujo_completo_viaje_monumento_Visit(self):
         m = make_monument(self.travel, name='Senso-ji', points=50)
-        v = make_visita(self.user, m, rating=5, validated=True)
+        v = make_Visit(self.user, m, rating=5, validated=True)
         self.assertEqual(m.travel, self.travel)
         self.assertEqual(v.monument, m)
         self.assertTrue(v.validation)
@@ -677,20 +678,20 @@ class IntegrationTests(TestCase):
 
     def test_cascade_delete_travel_borra_todo(self):
         m = make_monument(self.travel)
-        make_visita(self.user, m)
+        make_Visit(self.user, m)
         Route.objects.create(travel=self.travel, name='R', itinerary='...')
         self.travel.delete()
         self.assertEqual(Monument.objects.count(), 0)
-        self.assertEqual(Visita.objects.count(), 0)
+        self.assertEqual(Visit.objects.count(), 0)
         self.assertEqual(Route.objects.count(), 0)
 
     def test_logro_desbloqueado_tras_primer_viaje(self):
-        logro = LogroDefinicion.objects.get(codigo='primer_viaje')
-        tiene_el_logro = self.user.logros_desbloqueados.filter(logro=logro).exists()
-        self.assertTrue(tiene_el_logro, "El sistema no le ha dado el logro automáticamente al usuario")
+        achievement = Achievement.objects.get(codigo='primer_viaje')
+        tiene_el_logro = self.user.logros_desbloqueados.filter(logro=achievement).exists()
+        self.assertTrue(tiene_el_logro, "El sistema no le ha dado el logro automáticamente al user")
         self.assertEqual(self.user.logros_desbloqueados.count(), 1)
 
-    def test_usuario_multiples_paises(self):
+    def test_user_multiples_paises(self):
         make_travel(self.user, destination='París',  country_code='FR')
         make_travel(self.user, destination='Berlín', country_code='DE')
         paises = set(Travel.objects.filter(user=self.user)

@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from django.utils import timezone
 
-from .models import Monument, Route, Travel, Visita
+from .models import Monument, Route, Travel, Visit
 from .serializers import (
     MonumentSerializer, 
     TravelSerializer, 
@@ -35,7 +35,7 @@ class MapStatsView(APIView):
 
     def get(self, request):
         try:
-            # Solo viajes cuya fecha de fin ya pasó
+            # Solo viajes cuya date de fin ya pasó
             viajes_pasados = Travel.objects.filter(
                 user=request.user,
                 end_date__lt=timezone.now().date()  # ← solo pasados
@@ -64,11 +64,11 @@ class ViajeCreateView(APIView):
         serializer = TravelCreateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
-            return Response({"mensaje": "Viaje creado exitosamente"}, status=status.HTTP_201_CREATED)
+            return Response({"mensaje": "Viajecreated exitosamente"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ValidarVisitaView(APIView):
+class ValidarVisitView(APIView):
     authentication_classes = [TokenAuthentication]   # ← añadir
     permission_classes = [IsAuthenticated]            # ← añadir
 
@@ -84,7 +84,7 @@ class ValidarVisitaView(APIView):
             viaje.save()
             return Response({
                 "validado": True,
-                "mensaje": "¡Visita validada! Estás en el lugar correcto.",
+                "mensaje": "¡Visit validada! Estás en el lugar correcto.",
                 "distancia_metros": round(distancia, 2)
             }, status=status.HTTP_200_OK)
         else:
@@ -222,7 +222,7 @@ class MonumentosViajeView(APIView):
             'name': m.name,
             'description': m.description,
             'points': m.points,
-            'visitado': Visita.objects.filter(user=request.user, monument=m).exists()
+            'Visitado': Visit.objects.filter(user=request.user, monument=m).exists()
         } for m in monumentos]
 
         return Response(monumentos_data)
@@ -233,9 +233,9 @@ class ValidarMonumentoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        """Validar visita a monumento por geolocalización"""
+        """Validar Visit a monumento por geolocalización"""
         viaje_id = request.data.get('viaje_id')
-        nombre_monumento = request.data.get('nombre').strip()
+        name_monumento = request.data.get('name').strip()
         user_lat = float(request.data.get('latitud'))
         user_lon = float(request.data.get('longitud'))
 
@@ -258,32 +258,32 @@ class ValidarMonumentoView(APIView):
         # Crear o buscar monumento
         monumento, created = Monument.objects.get_or_create(
             travel=viaje,
-            name=nombre_monumento,
+            name=name_monumento,
             defaults={
                 'description': f'Visitado en {viaje.destination}',
                 'points': 1
             }
         )
 
-        # Registrar visita
+        # Registrar Visit
         from django.utils import timezone
-        visita, created_visita = Visita.objects.get_or_create(
+        Visit, created_Visit = Visit.objects.get_or_create(
             user=request.user,
             monument=monumento,
             defaults={
                 'date': timezone.now().date(),
                 'rating': 5,
-                'valitation': True
+                'validation': True
             }
         )
 
-        if not created_visita:
+        if not created_Visit:
             return Response({
-                "error": "Ya visitaste este monumento"
+                "error": "Ya Visitste este monumento"
             }, status=400)
 
         return Response({
-            "mensaje": f"¡Visita validada a {nombre_monumento}!",
+            "mensaje": f"¡Visit validada a {name_monumento}!",
             "puntos": monumento.points,
             "distancia_km": round(distancia / 1000, 2)
         })
@@ -322,12 +322,12 @@ class RecomendarDestinoView(APIView):
         prompt_sistema = """
         Eres un experto agente de viajes especializado en turismo sostenible. 
         Tu misión absoluta es EVITAR LA MASIFICACIÓN TURÍSTICA (overtourism). 
-        Cuando el usuario te pida un tipo de viaje, debes recomendar un destino alternativo, 
+        Cuando el user te pida un tipo de viaje, debes recomendar un destino alternativo, 
         poco conocido, original y que no sufra de exceso de turistas. 
         PROHIBIDO recomendar capitales famosas o destinos masificados (ej: París, Venecia, Roma, Bali, Cancún, Kioto).
-        Tu respuesta debe contener ÚNICAMENTE el nombre de la ciudad/región y el país, 
+        Tu respuesta debe contener ÚNICAMENTE el name de la ciudad/región y el país, 
         en formato 'Destino, País' (ejemplo: 'Gante, Bélgica' o 'Azores, Portugal'). 
-        No añadas saludos, ni introducciones, ni puntos finales. Solo el nombre del lugar.
+        No añadas saludos, ni introducciones, ni puntos finales. Solo el name del lugar.
         """
 
         try:

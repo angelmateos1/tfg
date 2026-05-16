@@ -213,8 +213,8 @@
     color: #065f46;
 }
 
-/* FECHAS */
-.viaje-fechas {
+/* dateS */
+.viaje-dates {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -224,27 +224,27 @@
     border-radius: 10px;
 }
 
-.fecha-item {
+.date-item {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.fecha-label {
+.date-label {
     font-size: 11px;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.fecha-valor {
+.date-valor {
     font-size: 14px;
     font-weight: 600;
     color: #1e293b;
 }
 
-.fecha-separador {
+.date-separador {
     font-size: 18px;
     color: #cbd5e1;
 }

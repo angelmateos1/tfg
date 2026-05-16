@@ -135,7 +135,7 @@
 .text-muted { color: #64748b; font-size: 13px; margin: 0; }
 .small { font-size: 11px !important; color: #94a3b8 !important; }
 
-/* CÓDIGO DE AMIGO */
+/* CÓDIGO DE friend */
 .id-box {
     width: 100%;
     background: #f8fafc;
@@ -301,8 +301,8 @@
 
 .btn-delete:hover { background: #fee2e2; }
 
-/* AMIGOS */
-.añadir-amigo-form {
+/* friendS */
+.añadir-friend-form {
     display: flex;
     gap: 8px;
     align-items: center;
@@ -310,7 +310,7 @@
     flex-wrap: wrap;
 }
 
-.añadir-amigo-form input {
+.añadir-friend-form input {
     flex: 1;
     padding: 10px 12px;
     border: 2px solid #e5e7eb;
@@ -319,23 +319,23 @@
     font-family: monospace;
 }
 
-.añadir-amigo-form input:focus {
+.añadir-friend-form input:focus {
     outline: none;
     border-color: #3b82f6;
 }
 
-.amigo-feedback {
+.friend-feedback {
     font-size: 13px;
     width: 100%;
 }
 
-.amigos-lista-vertical {
+.friends-lista-vertical {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.amigo-row {
+.friend-row {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -344,7 +344,7 @@
     background: #f8fafc;
 }
 
-.amigo-avatar-small {
+.friend-avatar-small {
     width: 42px;
     height: 42px;
     border-radius: 50%;
@@ -359,28 +359,28 @@
     flex-shrink: 0;
 }
 
-.amigo-avatar-small img {
+.friend-avatar-small img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.amigo-datos { flex: 1; }
+.friend-datos { flex: 1; }
 
-.amigo-datos h4 {
+.friend-datos h4 {
     margin: 0 0 2px 0;
     font-size: 14px;
     color: #1e293b;
 }
 
-.amigo-datos p {
+.friend-datos p {
     margin: 0;
     font-size: 12px;
     color: #94a3b8;
     font-family: monospace;
 }
 
-/* LOGROS */
+/*achievementS */
 .logros-grid-nuevo {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -416,7 +416,7 @@
 
 .logro-icono { font-size: 28px; }
 
-.logro-nombre {
+.logro-name {
     font-weight: 600;
     font-size: 12px;
 }
@@ -427,7 +427,7 @@
     line-height: 1.4;
 }
 
-/* El contenedor de todos los logros (Grid) */
+/* El contenedor de todos losachievements (Grid) */
 .logros-grid-nuevo {
     display: grid;
     /* Las tarjetas se adaptan al tamaño: mínimo 120px de ancho */
@@ -436,7 +436,7 @@
     margin-top: 15px;
 }
 
-/* La tarjeta individual del logro */
+/* La tarjeta individual delachievement */
 .logro-card {
     background-color: #f8fafc;
     border: 2px solid #e2e8f0;
@@ -452,7 +452,7 @@
     margin-bottom: 8px;
 }
 
-.logro-nombre {
+.logro-name {
     font-weight: bold;
     font-size: 14px;
     color: #1e293b;

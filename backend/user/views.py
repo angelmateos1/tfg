@@ -4,8 +4,8 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
-from .serializers import AmistadSerializer
-from .models import User, LogroDefinicion, LogroDesbloqueado, Amistad
+from .serializers import FriendshipSerializer
+from .models import User, Achievement, UnlockedAchievement, Friendship
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,28 +18,25 @@ class PerfilView(APIView):
     def get(self, request):
         user = request.user
         
-        # Logros desbloqueados
-        desbloqueados = LogroDesbloqueado.objects.filter(user=user).select_related('logro')
+        desbloqueados = UnlockedAchievement.objects.filter(user=user).select_related('achievement')
+
+        todos_logros = Achievement.objects.all()
         
-        # Todos los logros del sistema
-        todos_logros = LogroDefinicion.objects.all()
-        
-        logros_data = []
-        for logro_def in todos_logros:
-            desbloqueado_obj = desbloqueados.filter(logro=logro_def).first()
-            logros_data.append({
-                'codigo': logro_def.codigo,
-                'nombre': logro_def.nombre,
-                'descripcion': logro_def.descripcion,
-                'icono': logro_def.icono,
-                'desbloqueado': desbloqueado_obj is not None,
-                'fecha': desbloqueado_obj.fecha if desbloqueado_obj else None
+        achievements_data = []
+        for achievement_def in todos_logros:
+            desbloqueado_obj = desbloqueados.filter(achievement=achievement_def).first()
+            achievements_data.append({
+                'code': achievement_def.code,
+                'name': achievement_def.name,
+                'description': achievement_def.description,
+                'icon': achievement_def.icon,
+                'unlocked': desbloqueado_obj is not None,
+                'date': desbloqueado_obj.date if desbloqueado_obj else None
             })
 
-        amistades = Amistad.objects.filter(usuario=user).select_related('amigo')
+        friendships = Friendship.objects.filter(user=user).select_related('friend')
         
-        # ✅ FIX: Usar directamente .url que devuelve la URL de Cloudinary
-        foto_url = user.foto_perfil.url if user.foto_perfil else None
+        foto_url = user.profile_picture.url if user.profile_picture else None
 
         return Response({
             "username": user.username,
@@ -48,16 +45,15 @@ class PerfilView(APIView):
             "last_name": user.last_name,
             "bio": user.bio,
             "date_joined": user.date_joined,
-            "codigo_amigo": user.codigo_amigo,
-            "foto_perfil": foto_url,
-            "logros": logros_data,
-            "amigos": AmistadSerializer(amistades, many=True).data
+            "friendship_code": user.friendship_code,
+            "profile_picture": foto_url,
+            "achievements": achievements_data,
+            "friends": FriendshipSerializer(friendships, many=True).data
         })
 
     def patch(self, request):
         user = request.user
         
-        # ✅ ACTUALIZAR CAMPOS DE TEXTO
         if 'first_name' in request.data:
             user.first_name = request.data.get('first_name', '').strip()
         
@@ -67,19 +63,17 @@ class PerfilView(APIView):
         if 'bio' in request.data:
             user.bio = request.data.get('bio', '').strip()
         
-        # Actualizar foto
-        if 'foto_perfil' in request.FILES:
-            foto = request.FILES['foto_perfil']
-            user.foto_perfil = foto
+        if 'profile_picture' in request.FILES:
+            foto = request.FILES['profile_picture']
+            user.profile_picture = foto
         
-        # ✅ GUARDAR USUARIO
         user.save()
         
-        foto_url = user.foto_perfil.url if user.foto_perfil else None
+        foto_url = user.profile_picture.url if user.profile_picture else None
         
         return Response({
             "mensaje": "Perfil actualizado",
-            "foto_perfil": foto_url,
+            "profile_picture": foto_url,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "bio": user.bio
@@ -98,17 +92,15 @@ class RankingView(APIView):
             monumentos = Monument.objects.filter(travel__user=user).count()
             return (paises * 10) + (monumentos * 1), paises, monumentos
 
-        # Todos los usuarios
         todos = User.objects.all()
         ranking = []
         for u in todos:
             puntos, paises, monumentos = calcular_puntos(u)
-            # ✅ FIX: Usar directamente .url
-            foto_url = u.foto_perfil.url if u.foto_perfil else None
+            foto_url = u.profile_picture.url if u.profile_picture else None
             ranking.append({
                 "id": u.id,
                 "username": u.username,
-                "foto_perfil": foto_url,
+                "profile_picture": foto_url,
                 "paises": paises,
                 "monumentos": monumentos,
                 "puntos": puntos,
@@ -116,73 +108,71 @@ class RankingView(APIView):
 
         ranking.sort(key=lambda x: x['puntos'], reverse=True)
 
-        # Posición del usuario actual
         mi_posicion = next((i+1 for i, r in enumerate(ranking) if r['id'] == request.user.id), None)
         mi_datos = next((r for r in ranking if r['id'] == request.user.id), None)
 
-        # IDs de amigos
-        amigos_ids = set(
-            Amistad.objects.filter(usuario=request.user).values_list('amigo_id', flat=True)
+        friends_ids = set(
+            Friendship.objects.filter(user=request.user).values_list('friend_id', flat=True)
         )
 
         return Response({
             "mi_posicion": mi_posicion,
             "yo": mi_datos,
             "ranking": ranking,
-            "amigos_ids": list(amigos_ids),
+            "friends_ids": list(friends_ids),
         })
 
-class AñadirAmigoView(APIView):
+class AñadirfriendView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        codigo = request.data.get('codigo_amigo', '').strip().upper()
+        code = request.data.get('friendship_code', '').strip().upper()
 
-        if not codigo:
+        if not code:
             return Response({"error": "Debes introducir un código"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            amigo = User.objects.get(codigo_amigo=codigo)
+            friend = User.objects.get(friendship_code=code)
         except User.DoesNotExist:
-            return Response({"error": "No existe ningún usuario con ese código"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "No existe ningún user con ese código"}, status=status.HTTP_404_NOT_FOUND)
 
-        if amigo == request.user:
+        if friend == request.user:
             return Response({"error": "No puedes añadirte a ti mismo"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if Amistad.objects.filter(usuario=request.user, amigo=amigo).exists():
-            return Response({"error": "Ya sois amigos"}, status=status.HTTP_400_BAD_REQUEST)
+        if Friendship.objects.filter(user=request.user, friend=friend).exists():
+            return Response({"error": "Ya sois friends"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Crear amistades bidireccionales
-        Amistad.objects.create(usuario=request.user, amigo=amigo)
-        Amistad.objects.create(usuario=amigo, amigo=request.user)
+        # Crear friendships bidireccionales
+        Friendship.objects.create(user=request.user, friend=friend)
+        Friendship.objects.create(user=friend, friend=request.user)
 
-        # ✅ DESBLOQUEAR LOGRO DE AMISTAD para el usuario actual
-        logro_social = LogroDefinicion.objects.filter(codigo='social').first()
-        if logro_social:
-            LogroDesbloqueado.objects.get_or_create(user=request.user, logro=logro_social)
+        # ✅ DESBLOQUEARachievement DE Friendship para el user actual
+        achievement_social = Achievement.objects.filter(codigo='social').first()
+        if achievement_social:
+            UnlockedAchievement.objects.get_or_create(user=request.user,achievement=achievement_social)
 
-        # ✅ DESBLOQUEAR LOGRO DE AMISTAD para el amigo también
-        if logro_social:
-            LogroDesbloqueado.objects.get_or_create(user=amigo, logro=logro_social)
+        # ✅ DESBLOQUEARachievement DE Friendship para el friend también
+        if achievement_social:
+            UnlockedAchievement.objects.get_or_create(user=friend,achievement=achievement_social)
 
-        return Response({"mensaje": f"¡{amigo.username} añadido como amigo!"})
+        return Response({"mensaje": f"¡{friend.username} añadido como friend!"})
 
 
-class EliminarAmigoView(APIView):
+class EliminarfriendView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def delete(self, request, amigo_id):
-        Amistad.objects.filter(usuario=request.user, amigo_id=amigo_id).delete()
-        Amistad.objects.filter(usuario_id=amigo_id, amigo=request.user).delete()
+    def delete(self, request, friend_id):
+        Friendship.objects.filter(user=request.user, friend_id=friend_id).delete()
+        Friendship.objects.filter(user_id=friend_id, friend=request.user).delete()
         return Response({"mensaje": "Amigo eliminado"})
     
     
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-from rest_framework.authtoken.models import Token  # ← AÑADIR AL INICIO
+from rest_framework.authtoken.models import Token
 
 class RegistroView(APIView):
     def post(self, request):
@@ -198,7 +188,7 @@ class RegistroView(APIView):
             return Response({"error": "Las contraseñas no coinciden"}, status=400)
 
         if User.objects.filter(username=username).exists():
-            return Response({"error": "El usuario ya existe"}, status=400)
+            return Response({"error": "El user ya existe"}, status=400)
 
         if User.objects.filter(email=email).exists():
             return Response({"error": "El email ya está registrado"}, status=400)
@@ -208,7 +198,7 @@ class RegistroView(APIView):
         except ValidationError as e:
             return Response({"error": list(e.messages)}, status=400)
 
-        # Crear usuario
+        # Crear user
         user = User.objects.create_user(
             username=username,
             email=email,
@@ -219,7 +209,7 @@ class RegistroView(APIView):
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response({
-            "mensaje": "Usuario creado correctamente",
+            "mensaje": "usercreated correctamente",
             "token": token.key,
             "username": user.username
         }, status=201)
@@ -227,7 +217,7 @@ class RegistroView(APIView):
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
-from .models import CodigoRecuperacion
+from .models import RecoveryCode
 
 class SolicitarRecuperacionView(APIView):
     def post(self, request):
@@ -243,8 +233,8 @@ class SolicitarRecuperacionView(APIView):
             return Response({"mensaje": "Si el email existe, recibirás un código de recuperación"})
 
         # Generar código
-        codigo = CodigoRecuperacion.generar_codigo()
-        CodigoRecuperacion.objects.create(user=user, codigo=codigo)
+        code = RecoveryCode.generar_codigo()
+        RecoveryCode.objects.create(user=user,code=code)
 
         # Enviar email
         from django.core.mail import send_mail
@@ -253,12 +243,12 @@ class SolicitarRecuperacionView(APIView):
         try:
             send_mail(
                 subject='TravelQuest - Código de recuperación',
-                message=f'Hola {user.username},\n\nTu código de recuperación es: {codigo}\n\nEste código expira en 15 minutos.\n\nSi no solicitaste esto, ignora este mensaje.',
+                message=f'Hola {user.username},\n\nTu código de recuperación es: {code}\n\nEste código expira en 15 minutos.\n\nSi no solicitaste esto, ignora este mensaje.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[email],
                 fail_silently=False,
             )
-            logger.info(f"✉️ Email enviado a {email} con código: {codigo}")
+            logger.info(f"✉️ Email enviado a {email} con código: {code}")
         except Exception as e:
             logger.error(f"❌ Error enviando email a {email}: {str(e)}")
             return Response({"error": f"Error al enviar el email: {str(e)}"}, status=500)
@@ -269,10 +259,10 @@ class SolicitarRecuperacionView(APIView):
 class VerificarCodigoView(APIView):
     def post(self, request):
         email = request.data.get('email', '').strip()
-        codigo = request.data.get('codigo', '').strip()
+        code = request.data.get('codigo', '').strip()
         nueva_password = request.data.get('nueva_password', '')
 
-        if not email or not codigo or not nueva_password:
+        if not email or not code or not nueva_password:
             return Response({"error": "Faltan datos"}, status=400)
 
         try:
@@ -282,14 +272,14 @@ class VerificarCodigoView(APIView):
 
         # Buscar código válido (no usado, creado en últimos 15 min)
         hace_15_min = timezone.now() - timedelta(minutes=15)
-        codigo_obj = CodigoRecuperacion.objects.filter(
+        code_obj = RecoveryCode.objects.filter(
             user=user,
-            codigo=codigo,
-            usado=False,
-            creado__gte=hace_15_min
+            code=code,
+            used=False,
+            created__gte=hace_15_min
         ).first()
 
-        if not codigo_obj:
+        if not code_obj:
             return Response({"error": "Código inválido o expirado"}, status=400)
 
         # Validar nueva contraseña
@@ -303,7 +293,7 @@ class VerificarCodigoView(APIView):
         user.save()
 
         # Marcar código como usado
-        codigo_obj.usado = True
-        codigo_obj.save()
+        code_obj.usado = True
+        code_obj.save()
 
         return Response({"mensaje": "Contraseña cambiada correctamente"})

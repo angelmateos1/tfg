@@ -1,12 +1,12 @@
 const token = localStorage.getItem('sofia_token');
 
 const LOGROS_SISTEMA = [
-    { id: 'primer_viaje', icono: '✈️', nombre: 'Primer Viaje',   descripcion: 'Añade tu primer viaje' },
-    { id: 'explorador',   icono: '🗺️', nombre: 'Explorador',     descripcion: 'Visita 5 países distintos' },
-    { id: 'trotamundos',  icono: '🌍', nombre: 'Trotamundos',    descripcion: 'Visita 10 países distintos' },
-    { id: 'fotografo',    icono: '📸', nombre: 'Fotógrafo',      descripcion: 'Sube 10 fotos de viajes' },
-    { id: 'aventurero',   icono: '🏔️', nombre: 'Aventurero',     descripcion: 'Valida una visita in situ' },
-    { id: 'social',       icono: '👥', nombre: 'Social',         descripcion: 'Añade tu primer amigo' },
+    { id: 'primer_viaje',icon: '✈️', name: 'Primer Viaje',  description: 'Añade tu primer viaje' },
+    { id: 'explorador',  icon: '🗺️', name: 'Explorador',    description: 'Visit 5 países distintos' },
+    { id: 'trotamundos', icon: '🌍', name: 'Trotamundos',   description: 'Visit 10 países distintos' },
+    { id: 'fotografo',   icon: '📸', name: 'Fotógrafo',     description: 'Sube 10 fotos de viajes' },
+    { id: 'aventurero',  icon: '🏔️', name: 'Aventurero',    description: 'Valida una Visit in situ' },
+    { id: 'social',      icon: '👥', name: 'Social',        description: 'Añade tu primer Amigo' },
 ];
 
 // ── INIT ───────────────────────────────────────────────────────────────────
@@ -34,53 +34,49 @@ function cargarPerfil() {
         return res.json();
     })
     .then(data => {
-        const nombre = data.first_name
+        const name = data.first_name
             ? `${data.first_name} ${data.last_name}`.trim()
             : data.username;
 
-        const iniciales = nombre.split(' ')
+        const iniciales = name.split(' ')
             .map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
         // Sidebar
         document.getElementById('perfil-iniciales').textContent = iniciales;
-        document.getElementById('perfil-nombre-corto').textContent = nombre;
+        document.getElementById('perfil-name-corto').textContent = name;
         document.getElementById('perfil-email-corto').textContent = data.email || 'Sin email';
-        document.getElementById('perfil-codigo').textContent = data.codigo_amigo || '—';
+        document.getElementById('perfil-codigo').textContent = data.friendship_code || '—';
 
-        const fecha = new Date(data.date_joined);
-        document.getElementById('perfil-fecha-corto').textContent =
-            'Miembro desde ' + fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
+        const date = new Date(data.date_joined);
+        document.getElementById('perfil-date-corto').textContent =
+            'Miembro desde ' + date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
 
         // Foto
-        if (data.foto_perfil) {
+        if (data.profile_picture) {
             const foto = document.getElementById('perfil-foto');
-            foto.src = data.foto_perfil;
+            foto.src = data.profile_picture;
             foto.style.display = 'block';
             document.getElementById('perfil-iniciales').style.display = 'none';
         }
 
         // Info personal
-        document.getElementById('perfil-nombre').textContent = nombre;
+        document.getElementById('perfil-name').textContent = name;
         document.getElementById('perfil-email').textContent = data.email || '—';
         document.getElementById('perfil-bio').textContent = data.bio || 'Sin biografía';
 
         // Campos edición
-        document.getElementById('edit-nombre').value = data.first_name || '';
+        document.getElementById('edit-name').value = data.first_name || '';
         document.getElementById('edit-apellidos').value = data.last_name || '';
         document.getElementById('edit-bio').value = data.bio || '';
 
-        // Contar logros desbloqueados
-        const desbloqueados = data.logros.filter(l => l.desbloqueado).length;
+        const desbloqueados = data.achievements.filter(l => l.unlocked).length;
         document.getElementById('stat-logros').textContent = desbloqueados;
         document.getElementById('stat-logros-seccion').textContent = desbloqueados;
 
-        // Renderizar logros
-        renderLogros(data.logros);
+        renderLogros(data.achievements);
 
-        // Amigos
-        renderAmigos(data.amigos);
+        renderFriends(data.friends);
 
-        // Stats viajes y países
         fetch(`${API_URL}/map-data/`, {
             headers: { 'Authorization': `Token ${token}` }
         })
@@ -94,26 +90,26 @@ function cargarPerfil() {
     .catch(err => console.error("Error cargando perfil:", err));
 }
 
-// ── RENDER AMIGOS ──────────────────────────────────────────────────────────
-function renderAmigos(amigos) {
-    const lista = document.getElementById('amigos-lista');
-    if (!amigos || amigos.length === 0) {
+// ── RENDER FRIENDS ──────────────────────────────────────────────────────────
+function renderFriends(friends) {
+    const lista = document.getElementById('friends-lista');
+    if (!friends || friends.length === 0) {
         lista.innerHTML = '<p class="text-muted">Aún no tienes amigos añadidos.</p>';
         return;
     }
-    lista.innerHTML = amigos.map(a => {
-        const iniciales = a.amigo.username.slice(0, 2).toUpperCase();
-        const foto = a.amigo.foto_perfil
-            ? `<img src="${a.amigo.foto_perfil}" alt="foto">`
+    lista.innerHTML = friends.map(a => {
+        const iniciales = a.friend.username.slice(0, 2).toUpperCase();
+        const foto = a.friend.profile_picture
+            ? `<img src="${a.friend.profile_picture}" alt="foto">`
             : `<span>${iniciales}</span>`;
         return `
-            <div class="amigo-row">
-                <div class="amigo-avatar-small">${foto}</div>
-                <div class="amigo-datos">
-                    <h4>${a.amigo.username}</h4>
-                    <p>${a.amigo.codigo_amigo}</p>
+            <div class="friend-row">
+                <div class="friend-avatar-small">${foto}</div>
+                <div class="friend-datos">
+                    <h4>${a.friend.username}</h4>
+                    <p>${a.friend.friendship_code}</p>
                 </div>
-                <button class="btn-delete" onclick="eliminarAmigo(${a.amigo.id}, this)">🗑️</button>
+                <button class="btn-delete" onclick="eliminarfriend(${a.friend.id}, this)">🗑️</button>
             </div>
         `;
     }).join('');
@@ -123,29 +119,27 @@ function renderAmigos(amigos) {
 function renderLogros(logrosData) {
     const grid = document.getElementById('logros-grid');
     
-    grid.innerHTML = logrosData.map(l => {
-        const fechaLogro = l.desbloqueado && l.fecha
-            ? new Date(l.fecha).toLocaleDateString('es-ES')
+    grid.innerHTML =logrosData.map(l => {
+        const dateLogro = l.unlocked && l.date
+            ? new Date(l.date).toLocaleDateString('es-ES')
             : null;
         
         return `
-            <div class="logro-card ${l.desbloqueado ? 'desbloqueado' : 'bloqueado'}">
-                <div class="logro-icono">${l.icono}</div>
-                <div class="logro-nombre">${l.nombre}</div>
+            <div class="logro-card ${l.unlocked ? 'desbloqueado' : 'bloqueado'}">
+                <div class="logro-icono">${l.icon}</div>
+                <div class="logro-name">${l.name}</div>
                 <div class="logro-desc">
-                    ${l.desbloqueado ? '✅ ' + fechaLogro : l.descripcion}
+                    ${l.unlocked ? '✅ ' + dateLogro : l.description}
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// ── EVENTOS ────────────────────────────────────────────────────────────────
 function iniciarEventos() {
-    // Copiar código
     document.getElementById('btn-copiar').addEventListener('click', () => {
-        const codigo = document.getElementById('perfil-codigo').textContent;
-        navigator.clipboard.writeText(codigo).then(() => {
+        const code = document.getElementById('perfil-codigo').textContent;
+        navigator.clipboard.writeText(code).then(() => {
             const fb = document.getElementById('copiar-feedback');
             fb.classList.add('visible');
             setTimeout(() => fb.classList.remove('visible'), 2000);
@@ -158,7 +152,7 @@ function iniciarEventos() {
         if (!file) return;
 
         const formData = new FormData();
-        formData.append('foto_perfil', file);
+        formData.append('profile_picture', file);
 
         fetch(`${API_URL}/perfil/`, {
             method: 'PATCH',
@@ -188,7 +182,7 @@ function toggleEditar() {
 
 function guardarPerfil() {
     const formData = new FormData();
-    formData.append('first_name', document.getElementById('edit-nombre').value.trim());
+    formData.append('first_name', document.getElementById('edit-name').value.trim());
     formData.append('last_name', document.getElementById('edit-apellidos').value.trim());
     formData.append('bio', document.getElementById('edit-bio').value.trim());
 
@@ -212,18 +206,18 @@ function guardarPerfil() {
     });
 }
 
-// ── AMIGOS ─────────────────────────────────────────────────────────────────
-function toggleAñadirAmigo() {
-    const form = document.getElementById('form-añadir-amigo');
+// ── friendS ─────────────────────────────────────────────────────────────────
+function toggleAñadirfriend() {
+    const form = document.getElementById('form-añadir-friend');
     form.classList.toggle('oculto-perfil');
     if (!form.classList.contains('oculto-perfil')) {
-        document.getElementById('input-codigo-amigo').focus();
+        document.getElementById('input-codigo-friend').focus();
     }
 }
 
-function añadirAmigo() {
-    const codigo = document.getElementById('input-codigo-amigo').value.trim();
-    const feedback = document.getElementById('amigo-feedback');
+function añadirfriend() {
+    constcode = document.getElementById('input-codigo-friend').value.trim();
+    const feedback = document.getElementById('friend-feedback');
 
     if (!codigo) {
         feedback.textContent = '❌ Introduce un código';
@@ -231,13 +225,13 @@ function añadirAmigo() {
         return;
     }
 
-    fetch(`${API_URL}/amigos/añadir/`, {
+    fetch(`${API_URL}/friends/añadir/`, {
         method: 'POST',
         headers: {
             'Authorization': `Token ${token}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ codigo_amigo: codigo })
+        body: JSON.stringify({ friendship_code:code })
     })
     .then(res => res.json())
     .then(data => {
@@ -247,31 +241,31 @@ function añadirAmigo() {
         } else {
             feedback.textContent = '✅ ' + data.mensaje;
             feedback.style.color = '#22c55e';
-            document.getElementById('input-codigo-amigo').value = '';
+            document.getElementById('input-codigo-friend').value = '';
             setTimeout(() => {
                 cargarPerfil();
-                toggleAñadirAmigo();
+                toggleAñadirfriend();
             }, 1500);
         }
     })
     .catch(err => {
-        console.error("Error añadiendo amigo:", err);
-        feedback.textContent = '❌ Error al añadir amigo';
+        console.error("Error añadiendo friend:", err);
+        feedback.textContent = '❌ Error al añadir friend';
         feedback.style.color = '#ef4444';
     });
 }
 
-function eliminarAmigo(amigoId, btn) {
+function eliminarfriend(friendId, btn) {
     mostrarConfirmacionPopup(
-        '¿Eliminar este amigo?',
+        '¿Eliminar este friend?',
         () => {
-            fetch(`${API_URL}/amigos/eliminar/${amigoId}/`, {
+            fetch(`${API_URL}/friends/eliminar/${friendId}/`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Token ${token}` }
             })
             .then(res => {
                 if (res.ok) {
-                    btn.closest('.amigo-row').remove();
+                    btn.closest('.friend-row').remove();
                     mostrarCustomPopup(
                         '👤 Amigo eliminado',
                         'El amigo ha sido eliminado correctamente.',

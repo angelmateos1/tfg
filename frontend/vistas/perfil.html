@@ -32,13 +32,13 @@
                     </label>
                 </div>
 
-                <h2 id="perfil-nombre-corto">Cargando...</h2>
+                <h2 id="perfil-name-corto">Cargando...</h2>
                 <p id="perfil-email-corto" class="text-muted">—</p>
-                <p id="perfil-fecha-corto" class="text-muted small">—</p>
+                <p id="perfil-date-corto" class="text-muted small">—</p>
 
                 <div class="id-box">
                     <div class="id-header">
-                        <span>Tu código de amigo</span>
+                        <span>Tu código de Amigo</span>
                         <span>🎫</span>
                     </div>
                     <div class="id-value">
@@ -58,7 +58,7 @@
                         <div class="stat-badge" id="stat-viajes">—</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label"><span>🏆</span> Logros</div>
+                        <div class="stat-label"><span>🏆</span>Logros</div>
                         <div class="stat-badge" id="stat-logros">—</div>
                     </div>
                 </div>
@@ -76,8 +76,8 @@
                 </div>
                 <div class="info-grid" id="info-ver">
                     <div class="info-group">
-                        <label>Nombre</label>
-                        <p id="perfil-nombre">—</p>
+                        <label>name</label>
+                        <p id="perfil-name">—</p>
                     </div>
                     <div class="info-group">
                         <label>Email</label>
@@ -90,8 +90,8 @@
                 </div>
                 <div class="info-grid oculto-perfil" id="info-editar">
                     <div class="info-group">
-                        <label>Nombre</label>
-                        <input type="text" id="edit-nombre" placeholder="Nombre">
+                        <label>name</label>
+                        <input type="text" id="edit-name" placeholder="name">
                     </div>
                     <div class="info-group">
                         <label>Apellidos</label>
@@ -108,14 +108,14 @@
             <div class="card">
                 <div class="card-header">
                     <h3>👥 Mis Amigos</h3>
-                    <button class="btn-blue" onclick="toggleAñadirAmigo()">👤+ Añadir Amigo</button>
+                    <button class="btn-blue" onclick="toggleAñadirfriend()">👤+ Añadir Amigo</button>
                 </div>
-                <div class="añadir-amigo-form oculto-perfil" id="form-añadir-amigo">
-                    <input type="text" id="input-codigo-amigo" placeholder="Introduce el código TQ-XXXXXXXX">
-                    <button class="btn-blue" onclick="añadirAmigo()">Añadir</button>
-                    <span class="amigo-feedback" id="amigo-feedback"></span>
+                <div class="añadir-friend-form oculto-perfil" id="form-añadir-friend">
+                    <input type="text" id="input-codigo-friend" placeholder="Introduce el código TQ-XXXXXXXX">
+                    <button class="btn-blue" onclick="añadirfriend()">Añadir</button>
+                    <span class="friend-feedback" id="friend-feedback"></span>
                 </div>
-                <div class="amigos-lista-vertical" id="amigos-lista">
+                <div class="friends-lista-vertical" id="friends-lista">
                     <p class="text-muted">Cargando amigos...</p>
                 </div>
             </div>

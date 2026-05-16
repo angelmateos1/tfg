@@ -91,7 +91,7 @@ function renderViajes(viajes) {
 function renderViajeCard(v, hoy) {
     const inicio = new Date(v.start_date);
     const fin = new Date(v.end_date);
-    const esPasado = fin < hoy;
+    inicio.setHours(0, 0, 0, 0);
     const esActivo = inicio <= hoy && fin >= hoy;
     const esFuturo = inicio > hoy;
 
@@ -115,7 +115,7 @@ function renderViajeCard(v, hoy) {
 
     let botonesAcciones = '';
     if (esActivo) {
-        botonesAcciones += `<button class="btn-validar" onclick="validarViajeHandler(event, ${v.id})">📍 Validar visita</button>`;
+        botonesAcciones += `<button class="btn-validar" onclick="validarViajeHandler(event, ${v.id})">📍 Validar Visit</button>`;
     }
     botonesAcciones += `<button class="btn-eliminar" onclick="eliminarViajeHandler(event, ${v.id})">🗑️ Eliminar</button>`;
 
@@ -128,15 +128,15 @@ function renderViajeCard(v, hoy) {
                 </div>
                 ${estadoBadge}
             </div>
-            <div class="viaje-fechas">
-                <div class="fecha-item">
-                    <span class="fecha-label">Inicio</span>
-                    <span class="fecha-valor">${inicioFormato}</span>
+            <div class="viaje-dates">
+                <div class="date-item">
+                    <span class="date-label">Inicio</span>
+                    <span class="date-valor">${inicioFormato}</span>
                 </div>
-                <div class="fecha-separador">→</div>
-                <div class="fecha-item">
-                    <span class="fecha-label">Fin</span>
-                    <span class="fecha-valor">${finFormato}</span>
+                <div class="date-separador">→</div>
+                <div class="date-item">
+                    <span class="date-label">Fin</span>
+                    <span class="date-valor">${finFormato}</span>
                 </div>
             </div>
             <div class="viaje-acciones">
@@ -256,7 +256,7 @@ function guardarViaje() {
     }
 
     if (inicio > fin) {
-        feedback.textContent = '❌ La fecha de fin no puede ser anterior a la de inicio';
+        feedback.textContent = '❌ La date de fin no puede ser anterior a la de inicio';
         feedback.style.color = '#ef4444';
         return;
     }
@@ -269,7 +269,7 @@ function guardarViaje() {
         .then(res => res.json())
         .then(data => {
             if (data.length === 0) {
-                feedback.textContent = '❌ Lugar no encontrado. Prueba con otro nombre.';
+                feedback.textContent = '❌ Lugar no encontrado. Prueba con otro name.';
                 feedback.style.color = '#ef4444';
                 return;
             }
@@ -360,7 +360,7 @@ function validarViaje(viajeId) {
 
     // Encontrar el botón para actualizar su estado
     const btn = document.querySelector(`[onclick*="validarViajeHandler(event, ${viajeId})"]`);
-    const mensajeOriginal = btn ? btn.textContent : '📍 Validar visita';
+    const mensajeOriginal = btn ? btn.textContent : '📍 Validar Visit';
     if (btn) btn.disabled = true;
     if (btn) btn.textContent = '📍 Obteniendo ubicación...';
 
@@ -371,7 +371,7 @@ function validarViaje(viajeId) {
 
             if (btn) btn.textContent = '⏳ Validando...';
 
-            fetch(`${API_URL}/validar-visita/${viajeId}/`, {
+            fetch(`${API_URL}/validar-Visit/${viajeId}/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Token ${token}`,
@@ -401,8 +401,8 @@ function validarViaje(viajeId) {
                 }
             })
             .catch(err => {
-                console.error("Error validando visita:", err);
-                alert(`❌ Error al validar la visita: ${err.message}`);
+                console.error("Error validando Visit:", err);
+                alert(`❌ Error al validar la Visit: ${err.message}`);
                 if (btn) btn.textContent = mensajeOriginal;
                 if (btn) btn.disabled = false;
             });
@@ -446,7 +446,7 @@ function abrirDetalleViaje(viajeId) {
         
         const inicio = new Date(data.viaje.start_date).toLocaleDateString('es-ES');
         const fin = new Date(data.viaje.end_date).toLocaleDateString('es-ES');
-        document.getElementById('modal-fechas').textContent = `${inicio} - ${fin}`;
+        document.getElementById('modal-dates').textContent = `${inicio} - ${fin}`;
         
         // Itinerario
         let itinerario = '';
@@ -480,7 +480,7 @@ function cerrarModalDetalle() {
     if (!formMonumento.classList.contains('oculto-viajes')) {
         formMonumento.classList.add('oculto-viajes');
     }
-    document.getElementById('input-nombre-monumento').value = '';
+    document.getElementById('input-name-monumento').value = '';
     document.getElementById('monumento-feedback').textContent = '';
 }
 
@@ -560,6 +560,7 @@ function generarItinerarioIA() {
         
         if (data.itinerario) {
             textarea.value = data.itinerario;
+            viajeActual.itinerario = data.itinerario;
             feedback.textContent = '✅ ' + (data.mensaje || 'Itinerario generado correctamente');
             feedback.style.color = '#22c55e';
             setTimeout(() => {
@@ -633,20 +634,20 @@ function toggleFormMonumento() {
     form.classList.toggle('oculto-viajes');
     
     if (!form.classList.contains('oculto-viajes')) {
-        document.getElementById('input-nombre-monumento').focus();
+        document.getElementById('input-name-monumento').focus();
         document.getElementById('monumento-feedback').textContent = '';
     } else {
-        document.getElementById('input-nombre-monumento').value = '';
+        document.getElementById('input-name-monumento').value = '';
         document.getElementById('monumento-feedback').textContent = '';
     }
 }
 
 function validarMonumento() {
-    const nombre = document.getElementById('input-nombre-monumento').value.trim();
+    const name = document.getElementById('input-name-monumento').value.trim();
     const feedback = document.getElementById('monumento-feedback');
 
-    if (!nombre) {
-        feedback.textContent = '❌ Escribe el nombre del monumento';
+    if (!name) {
+        feedback.textContent = '❌ Escribe el name del monumento';
         feedback.style.color = '#ef4444';
         return;
     }
@@ -675,7 +676,7 @@ function validarMonumento() {
                 },
                 body: JSON.stringify({
                     viaje_id: viajeActual.id,
-                    nombre: nombre,
+                    name: name,
                     latitud: lat,
                     longitud: lon
                 })
@@ -695,7 +696,7 @@ function validarMonumento() {
                 } else {
                     feedback.textContent = '✅ ' + (data.mensaje || 'Monumento añadido correctamente');
                     feedback.style.color = '#22c55e';
-                    document.getElementById('input-nombre-monumento').value = '';
+                    document.getElementById('input-name-monumento').value = '';
                     
                     // Recargar lista de monumentos
                     setTimeout(() => {
@@ -724,7 +725,7 @@ function validarMonumento() {
 }
 
 function eliminarMonumento(monumentoId) {
-    if (!confirm('¿Eliminar esta visita?')) return;
+    if (!confirm('¿Eliminar esta Visit?')) return;
 
     fetch(`${API_URL}/eliminar-monumento/${monumentoId}/`, {
         method: 'DELETE',

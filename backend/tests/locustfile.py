@@ -19,7 +19,7 @@ TOKEN = '41f91e9f23cc3f57a50a8c044c8e34b870f14a1d'
 
 
 class ViajeroUser(HttpUser):
-    """Usuario activo: crea, consulta y modifica viajes."""
+    """user activo: crea, consulta y modifica viajes."""
     wait_time = between(1, 3)
 
     def on_start(self):
@@ -89,8 +89,8 @@ class ViajeroUser(HttpUser):
             )
 
 
-class UsuarioLigero(HttpUser):
-    """Usuario casual: solo consulta sin crear."""
+class userLigero(HttpUser):
+    """user casual: solo consulta sin crear."""
     wait_time = between(2, 5)
     weight = 3
 

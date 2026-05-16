@@ -477,7 +477,6 @@ function enviarCodigoRecuperacion() {
     })
     .then(res => res.json())
     .then(data => {
-        // CORRECCIÓN AQUÍ: Comprobamos si Django nos devuelve un error (ej. "Usuario no encontrado")
         if (data.error) {
             feedback.textContent = '❌ ' + (Array.isArray(data.error) ? data.error.join(', ') : data.error);
             feedback.style.color = '#ef4444';
@@ -499,11 +498,11 @@ function enviarCodigoRecuperacion() {
 
 function verificarCodigoRecuperacion() {
     const email = document.getElementById('recup-email').value.trim();
-    const codigo = document.getElementById('recup-codigo').value.trim();
+    const code = document.getElementById('recup-codigo').value.trim();
     const nueva_password = document.getElementById('recup-nueva-password').value;
     const feedback = document.getElementById('recuperacion-feedback');
 
-    if (!codigo || !nueva_password) {
+    if (!code || !nueva_password) {
         feedback.textContent = '❌ Rellena todos los campos';
         feedback.style.color = '#ef4444';
         return;
@@ -515,7 +514,7 @@ function verificarCodigoRecuperacion() {
     fetch(`${API_URL}/verificar-codigo/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, codigo, nueva_password })
+        body: JSON.stringify({ email,code, nueva_password })
     })
     .then(res => res.json())
     .then(data => {

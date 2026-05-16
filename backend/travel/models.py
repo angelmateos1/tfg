@@ -24,7 +24,7 @@ class Monument(models.Model):
     def __str__(self):
         return self.name
 
-class Visita(models.Model):
+class Visit(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     monument = models.ForeignKey(Monument, on_delete=models.CASCADE)
     date = models.DateField()
