@@ -29,7 +29,7 @@ class Visita(models.Model):
     monument = models.ForeignKey(Monument, on_delete=models.CASCADE)
     date = models.DateField()
     rating = models.IntegerField()
-    valitation = models.BooleanField(default=False)
+    validation = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.monument.name} - {self.date}"

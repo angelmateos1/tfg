@@ -132,17 +132,17 @@ class Command(BaseCommand):
         # Visitas de Ángel en París (Pasadas y validadas)
         Visita.objects.create(
             user=angel, monument=torre_eiffel, 
-            date=viaje_paris.start_date + timedelta(days=1), rating=5, valitation=True
+            date=viaje_paris.start_date + timedelta(days=1), rating=5, validation=True
         )
         Visita.objects.create(
             user=angel, monument=louvre, 
-            date=viaje_paris.start_date + timedelta(days=2), rating=4, valitation=True
+            date=viaje_paris.start_date + timedelta(days=2), rating=4, validation=True
         )
 
         # Visita de María en Roma
         Visita.objects.create(
             user=maria, monument=coliseo, 
-            date=viaje_roma.start_date + timedelta(days=1), rating=5, valitation=True
+            date=viaje_roma.start_date + timedelta(days=1), rating=5, validation=True
         )
         
         # (Nota: No le ponemos visitas a Tokio porque es un viaje futuro)
