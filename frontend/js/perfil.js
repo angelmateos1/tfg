@@ -196,12 +196,10 @@ function guardarPerfil() {
         return res.json();
     })
     .then(data => {
-        console.log("✅ Perfil guardado:", data);
         toggleEditar();
         cargarPerfil();
     })
     .catch(err => {
-        console.error("Error guardando perfil:", err);
         alert('❌ Error al guardar los cambios');
     });
 }

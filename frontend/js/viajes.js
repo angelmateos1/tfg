@@ -436,7 +436,6 @@ function abrirDetalleViaje(viajeId) {
         return res.json();
     })
     .then(data => {
-        console.log("📦 Datos del viaje recibidos:", data);
         
         viajeActual = data.viaje;
         
@@ -556,7 +555,6 @@ function generarItinerarioIA() {
         return res.json();
     })
     .then(data => {
-        console.log("🤖 Itinerario generado:", data);
         
         if (data.itinerario) {
             textarea.value = data.itinerario;

@@ -121,7 +121,7 @@ function mostrarfriends() {
     modoActual = 'friends';
     document.getElementById('btn-friends').classList.add('active');
     document.getElementById('btn-global').classList.remove('active');
-    document.getElementById('ranking-titulo').textContent = 'Ranking de friends';
+    document.getElementById('ranking-titulo').textContent = 'Ranking de amigos';
     
     // Filtramos la lista global para mostrar solo a los friends
     const solofriends = rankingGlobal.filter(u => friendsIds.has(u.id));
