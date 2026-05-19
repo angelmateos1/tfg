@@ -1,6 +1,5 @@
 let map = null;
 
-// --- 1. INICIALIZACIÓN ---
 window.onload = function() {
     const token = localStorage.getItem('sofia_token');
     if (!token) {
@@ -10,7 +9,6 @@ window.onload = function() {
     }
 };
 
-// --- 2. AUTENTICACIÓN ---
 function mostrarLogin() {
     document.getElementById('loginSection').style.display = 'flex';
     document.getElementById('appSection').style.display = 'none';
@@ -23,14 +21,13 @@ function mostrarApp() {
     loginSection.style.display = 'none';
     appSection.style.display = 'flex';
 
-    // Esperamos a que #miMapa tenga dimensiones reales
     const mapa = document.getElementById('miMapa');
     
     const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
             const { width, height } = entry.contentRect;
             if (width > 0 && height > 0) {
-                observer.disconnect(); // dejamos de observar
+                observer.disconnect(); 
                 inicializarMapa();
             }
         }
@@ -56,7 +53,6 @@ function hacerLogin() {
         password: passField.value
     };
 
-    // Deshabilitar botón para evitar doble click
     const btn = document.querySelector('.btn-entrar');
     if (btn) {
         btn.disabled = true;
@@ -78,14 +74,13 @@ function hacerLogin() {
     .then(data => {
         if (!data.token) throw new Error("El servidor no devolvió un token");
         localStorage.setItem('sofia_token', data.token);
-        mostrarApp(); // ← ya no necesita recarga
+        mostrarApp();
     })
     .catch(err => {
         console.error("Error en el login:", err);
-        alert(err.message);
+        mostrarCustomPopup('❌ Error en el login', err.message, 'error');
     })
     .finally(() => {
-        // Rehabilitar botón siempre, haya error o no
         if (btn) {
             btn.disabled = false;
             btn.textContent = 'Entrar al mapa';
@@ -99,7 +94,7 @@ function cerrarSesion() {
         map.remove();
         map = null;
     }
-    mostrarLogin(); // ← sin recarga, más limpio
+    mostrarLogin();
 }
 
 function cargarVista(rutaArchivo) {
@@ -114,7 +109,7 @@ function cargarVista(rutaArchivo) {
 
             contenedor.innerHTML = html;
             contenedor.classList.remove('oculto');
-            mapWrapper.style.display = 'none'; // ← ocultar mapa
+            mapWrapper.style.display = 'none';
         })
         .catch(err => console.error("Error cargando vista:", err));
 }
@@ -125,17 +120,14 @@ function cerrarVista() {
 
     contenedor.classList.add('oculto');
     contenedor.innerHTML = '';
-    mapWrapper.style.display = 'flex'; // ← mostrar mapa de nuevo
+    mapWrapper.style.display = 'flex';
 
-    // Forzar redibujado de Leaflet al volver
     setTimeout(() => {
         if (map) map.invalidateSize();
     }, 100);
 }
 
-// --- 4. LÓGICA DEL MAPA ---
 function inicializarMapa() {
-    // Si ya existe un mapa, lo destruimos antes de crear uno nuevo
     if (map !== null) {
         map.remove();
         map = null;
@@ -191,21 +183,17 @@ function cargarDatosMapa() {
     })
     .then(data => {
 
-        // 1️⃣ PRIMERO: Pintar países
         if (data.paises && data.paises.length > 0) {
             pintarPaisesEnMapa(data.paises);
         }
 
-        // 2️⃣ SEGUNDO: Añadir marcadores (con un pequeño delay para que GeoJSON termine)
         setTimeout(() => {
-            // Limpiar marcadores anteriores
             map.eachLayer(layer => {
                 if (layer instanceof L.Marker) {
                     map.removeLayer(layer);
                 }
             });
 
-            // Añadir nuevos marcadores
             if (data.markers && Array.isArray(data.markers)) {
                 data.markers.forEach(viaje => {
                     L.marker([viaje.latitude, viaje.longitude])
@@ -220,19 +208,18 @@ function cargarDatosMapa() {
     .catch(err => console.error("Error cargando datos del mapa:", err));
 }
 
-// --- 5. FUNCIONES DE VIAJES ---
 function procesarNuevoViaje() {
     const destino = document.getElementById('inputDestino').value.trim();
     const inicio = document.getElementById('inputInicio').value;
     const fin = document.getElementById('inputFin').value;
 
-    if (!destino || !inicio || !fin) return alert("Rellena todos los campos");
-    if (inicio > fin) return alert("La fecha de fin no puede ser anterior a la de inicio");
+    if (!destino || !inicio || !fin) return mostrarCustomPopup('❌ Error', 'Rellena todos los campos para añadir un viaje', 'error');
+    if (inicio > fin) return mostrarCustomPopup('❌ Error', 'La fecha de fin no puede ser anterior a la de inicio', 'error');
 
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destino)}&addressdetails=1`)
         .then(res => res.json())
         .then(data => {
-            if (data.length === 0) return alert("Lugar no encontrado. Prueba con otro nombre.");
+            if (data.length === 0) return mostrarCustomPopup('❌ Error', 'Lugar no encontrado. Prueba con otro nombre.', 'error');
 
             const lat = data[0].lat;
             const lon = data[0].lon;
@@ -255,11 +242,11 @@ function procesarNuevoViaje() {
             });
         })
         .then(res => {
-            if (!res) return; // si el lugar no se encontró, res es undefined
+            if (!res) return;
             if (res.ok) {
-                alert("¡Viaje añadido correctamente!");
+                mostrarCustomPopup('✅ Éxito', '¡Viaje añadido correctamente!', 'success');
                 cerrarVista();
-                cargarDatosMapa(); // recarga solo los datos, sin destruir el mapa
+                cargarDatosMapa();
             } else {
                 return res.json().then(err => {
                     throw new Error(JSON.stringify(err));
@@ -277,7 +264,6 @@ function pintarPaisesEnMapa(paisesVisitados) {
         typeof p === 'string' ? p.toUpperCase() : p.country_code.toUpperCase()
     );
 
-    // Usar Natural Earth - más confiable para ISO_A3
     fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson')
         .then(res => res.json())
         .then(geojson => {
@@ -290,11 +276,9 @@ function pintarPaisesEnMapa(paisesVisitados) {
             geojsonLayer = L.geoJSON(geojson, {
 
                 style: function(feature) {
-                    // Sacamos el código de 2 letras (ej: "CZ") y el de 3 letras (ej: "FRA") del mapa
                     const codigo2 = feature.properties.ISO_A2?.toUpperCase() || '';
                     const codigo3 = feature.properties.ADM0_A3?.toUpperCase() || feature.properties.ISO_A3?.toUpperCase() || '';
                     
-                    // Si la lista de Django tiene CUALQUIERA de los dos, lo damos por visitado
                     const visitado = visitados.includes(codigo2) || visitados.includes(codigo3);
                     
                     return {
@@ -323,7 +307,7 @@ function mostrarPerfil() {
     const token = localStorage.getItem('sofia_token');
     
     if (!token) {
-        alert("No estás autenticado. Inicia sesión primero.");
+        mostrarCustomPopup('❌ Error', 'No estás autenticado. Inicia sesión primero.', 'error');
         return;
     }
 
@@ -334,7 +318,7 @@ function mostrarRanking() {
     const token = localStorage.getItem('sofia_token');
     
     if (!token) {
-        alert("No estás autenticado. Inicia sesión primero.");
+        mostrarCustomPopup('❌ Error', 'No estás autenticado. Inicia sesión primero.', 'error');
         return;
     }
 
@@ -345,16 +329,14 @@ function mostrarViajes() {
     const token = localStorage.getItem('sofia_token');
     
     if (!token) {
-        alert("No estás autenticado. Inicia sesión primero.");
+        mostrarCustomPopup('❌ Error', 'No estás autenticado. Inicia sesión primero.', 'error');
         return;
     }
 
     window.location.href = '/viajes/';
 }
 
-// ── DETECTAR VUELTA DESDE OTRAS PÁGINAS ────────────────────────────────────
 window.addEventListener('pageshow', function(event) {
-    // Si volvemos con el botón "atrás" del navegador, refrescar el mapa
     if (event.persisted || performance.navigation.type === 2) {
         if (map !== null) {
             cargarDatosMapa();
@@ -387,7 +369,6 @@ function hacerRegistro() {
         return;
     }
 
-    // Deshabilitar botón mientras se procesa
     const btn = event.target;
     btn.disabled = true;
     btn.textContent = 'Creando cuenta...';
@@ -410,7 +391,7 @@ function hacerRegistro() {
         feedback.style.color = '#22c55e';
         localStorage.setItem('sofia_token', data.token);
         setTimeout(() => {
-            window.location.reload(); // Recargar para iniciar sesión automáticamente
+            window.location.reload();
         }, 1500);
     })
     .catch(err => {
@@ -423,7 +404,6 @@ function hacerRegistro() {
 }
 
 function mostrarRecuperacion() {
-    // Lista de IDs que queremos ocultar/mostrar
     const vistas = ['form-login-view', 'form-registro-view', 'form-recuperacion-view', 'paso-1-recuperacion', 'paso-2-recuperacion'];
     
     vistas.forEach(id => {
@@ -437,13 +417,12 @@ function mostrarRecuperacion() {
         }
     });
 
-    // Lista de inputs que queremos limpiar
     const inputs = ['recup-email', 'recup-codigo', 'recup-nueva-password', 'recup-nueva-password2'];
     
     inputs.forEach(id => {
         const input = document.getElementById(id);
         if (input) {
-            input.value = ''; // Solo lo limpia si existe
+            input.value = '';
         }
     });
 
@@ -484,7 +463,6 @@ function enviarCodigoRecuperacion() {
             feedback.textContent = '✅ ' + data.mensaje;
             feedback.style.color = '#22c55e';
             
-            // Mostrar paso 2 SOLO si todo ha ido bien
             document.getElementById('paso-1-recuperacion').style.display = 'none';
             document.getElementById('paso-2-recuperacion').style.display = 'block';
         }
@@ -532,4 +510,51 @@ function verificarCodigoRecuperacion() {
         feedback.textContent = '❌ Error al verificar código';
         feedback.style.color = '#ef4444';
     });
+}
+
+function mostrarConfirmacionPopup(mensaje, onConfirm) {
+    document.querySelectorAll('.custom-popup.confirm').forEach(p => p.remove());
+
+    const popup = document.createElement('div');
+    popup.className = 'custom-popup confirm';
+
+    popup.innerHTML = `
+        <div class="popup-content">
+            <h4>Confirmar</h4>
+            <p>${mensaje}</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button class="btn-cancelar-popup">Cancelar</button>
+                <button class="btn-confirmar-popup">Confirmar</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    popup.querySelector('.btn-cancelar-popup').onclick = () => popup.remove();
+    popup.querySelector('.btn-confirmar-popup').onclick = () => {
+        popup.remove();
+        onConfirm();
+    };
+}
+
+function mostrarCustomPopup(titulo, mensaje, tipo) {
+    const popup = document.createElement('div');
+    popup.className = `custom-popup ${tipo}`;
+    
+    popup.innerHTML = `
+        <div class="popup-content">
+            <h4>${titulo}</h4>
+            <p>${mensaje}</p>
+            <button onclick="this.parentElement.parentElement.remove()">Aceptar</button>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+        if (document.body.contains(popup)) {
+            popup.remove();
+        }
+    }, 4000);
 }

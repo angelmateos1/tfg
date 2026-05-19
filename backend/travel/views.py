@@ -35,21 +35,19 @@ class MapStatsView(APIView):
 
     def get(self, request):
         try:
-            # Solo viajes cuya date de fin ya pasó
             viajes_pasados = Travel.objects.filter(
                 user=request.user,
-                end_date__lt=timezone.now().date()  # ← solo pasados
+                end_date__lt=timezone.now().date()
             )
             
             paises_visitados = list(viajes_pasados.values_list('country_code', flat=True).distinct())
             
-            # Todos los viajes (para los marcadores)
             todos_viajes = Travel.objects.filter(user=request.user)
             serializer = TravelSerializer(todos_viajes, many=True)
             
             return Response({
-                "paises": paises_visitados,  # solo países de viajes pasados
-                "markers": serializer.data    # todos los viajes (pins)
+                "paises": paises_visitados,  
+                "markers": serializer.data   
             })
         except Exception as e:
             print(f"Error: {e}")
@@ -57,8 +55,8 @@ class MapStatsView(APIView):
         
 
 class ViajeCreateView(APIView):
-    authentication_classes = [TokenAuthentication]   # ← añadir
-    permission_classes = [IsAuthenticated]            # ← añadir
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = TravelCreateSerializer(data=request.data)
@@ -69,8 +67,8 @@ class ViajeCreateView(APIView):
 
 
 class ValidarVisitView(APIView):
-    authentication_classes = [TokenAuthentication]   # ← añadir
-    permission_classes = [IsAuthenticated]            # ← añadir
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request, viaje_id):
         viaje = get_object_or_404(Travel, id=viaje_id)
@@ -78,13 +76,12 @@ class ValidarVisitView(APIView):
         user_lon = float(request.data.get('longitud'))
         distancia = calcular_distancia(user_lat, user_lon, viaje.latitude, viaje.longitude)
 
-        # 🔍 Distancia máxima permitida: 5 km (5000 metros)
         if distancia <= 5000:
             viaje.is_validated = True
             viaje.save()
             return Response({
                 "validado": True,
-                "mensaje": "¡Visit validada! Estás en el lugar correcto.",
+                "mensaje": "¡Visita validada! Estás en el lugar correcto.",
                 "distancia_metros": round(distancia, 2)
             }, status=status.HTTP_200_OK)
         else:
@@ -124,7 +121,7 @@ class DetalleViajeView(APIView):
         rutas_data = [{
             'id': r.id,
             'name': r.name,
-            'itinerary': r.itinerary  # ← CRÍTICO: debe coincidir con el modelo
+            'itinerary': r.itinerary
         } for r in rutas]
 
         serializer = TravelSerializer(viaje)
@@ -137,17 +134,15 @@ class DetalleViajeView(APIView):
         """Actualizar itinerario manualmente"""
         viaje = get_object_or_404(Travel, id=viaje_id, user=request.user)
         
-        # IMPORTANTE: el campo se llama 'itinerario' en el request
         itinerario_texto = request.data.get('itinerario', '').strip()
 
         if not itinerario_texto:
             return Response({"error": "El itinerario no puede estar vacío"}, status=400)
 
-        # Buscar o crear ruta para este viaje
         ruta, created = Route.objects.update_or_create(
             travel=viaje,
             name=f"Itinerario - {viaje.destination}",
-            defaults={'itinerary': itinerario_texto}  # ← guardar en el campo correcto
+            defaults={'itinerary': itinerario_texto}
         )
 
         return Response({
@@ -195,7 +190,6 @@ Incluye lugares turísticos, restaurantes recomendados y consejos prácticos."""
 
         itinerario_generado = chat_completion.choices[0].message.content
 
-        # Guardar como ruta
         ruta, _ = Route.objects.update_or_create(
             travel=viaje,
             name=f"Itinerario IA - {viaje.destination}",
@@ -241,21 +235,16 @@ class ValidarMonumentoView(APIView):
 
         viaje = get_object_or_404(Travel, id=viaje_id, user=request.user)
 
-        # Buscar monumentos cercanos conocidos (base de datos local o API externa)
-        # Por ahora, creamos el monumento si no existe
         
-        # Calcular distancia al destino del viaje
         from .utils import calcular_distancia
         distancia = calcular_distancia(user_lat, user_lon, viaje.latitude, viaje.longitude)
 
-        # Debe estar dentro del radio del viaje (ej: 50km)
-        if distancia > 50000:  # 50km en metros
+        if distancia > 50000: 
             return Response({
                 "error": f"Estás demasiado lejos de {viaje.destination}",
                 "distancia_km": round(distancia / 1000, 2)
             }, status=400)
 
-        # Crear o buscar monumento
         monumento, created = Monument.objects.get_or_create(
             travel=viaje,
             name=name_monumento,
@@ -265,7 +254,6 @@ class ValidarMonumentoView(APIView):
             }
         )
 
-        # Registrar Visit
         from django.utils import timezone
         Visit, created_Visit = Visit.objects.get_or_create(
             user=request.user,
@@ -283,7 +271,7 @@ class ValidarMonumentoView(APIView):
             }, status=400)
 
         return Response({
-            "mensaje": f"¡Visit validada a {name_monumento}!",
+            "mensaje": f"¡Visita validada a {name_monumento}!",
             "puntos": monumento.points,
             "distancia_km": round(distancia / 1000, 2)
         })
@@ -311,27 +299,24 @@ class RecomendarDestinoView(APIView):
         if not tipo_viaje:
             return Response({"error": "Debes especificar un tipo de viaje."}, status=400)
 
-        # 1. Inicializamos el cliente de Groq usando la clave de tu .env o Render
         try:
             client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
         except Exception as e:
             print("Error cargando API Key:", e)
             return Response({"error": "Error de configuración en el servidor."}, status=500)
 
-        # 2. 🧠 EL CEREBRO: El System Prompt que evita la masificación
         prompt_sistema = """
         Eres un experto agente de viajes especializado en turismo sostenible. 
         Tu misión absoluta es EVITAR LA MASIFICACIÓN TURÍSTICA (overtourism). 
         Cuando el user te pida un tipo de viaje, debes recomendar un destino alternativo, 
         poco conocido, original y que no sufra de exceso de turistas. 
         PROHIBIDO recomendar capitales famosas o destinos masificados (ej: París, Venecia, Roma, Bali, Cancún, Kioto).
-        Tu respuesta debe contener ÚNICAMENTE el name de la ciudad/región y el país, 
+        Tu respuesta debe contener ÚNICAMENTE el nombre de la ciudad/región y el país, 
         en formato 'Destino, País' (ejemplo: 'Gante, Bélgica' o 'Azores, Portugal'). 
-        No añadas saludos, ni introducciones, ni puntos finales. Solo el name del lugar.
+        No añadas saludos, ni introducciones, ni puntos finales. Solo el nombre del lugar.
         """
 
         try:
-            # 3. Hacemos la llamada a Groq
             chat_completion = client.chat.completions.create(
                 messages=[
                     {
@@ -343,18 +328,16 @@ class RecomendarDestinoView(APIView):
                         "content": f"Busco un destino para este tipo de viaje: {tipo_viaje}"
                     }
                 ],
-                model="llama-3.3-70b-versatile", # O el modelo rápido que estés usando en Groq
-                temperature=0.8, # Un poco alta para que sea creativo y original
-                max_tokens=20, # Muy pocos tokens para que no se enrolle
+                model="llama-3.3-70b-versatile",
+                temperature=0.8,
+                max_tokens=20,
             )
 
-            # 4. Extraemos la respuesta y la limpiamos un poco por seguridad
             destino_sugerido = chat_completion.choices[0].message.content.strip()
             destino_sugerido = destino_sugerido.replace('"', '').replace('.', '')
 
             return Response({"destino": destino_sugerido})
 
         except Exception as e:
-            # Por si Groq se cae, devuelve un error controlado y no un 500 fatal
             print(f"Error de conexión con Groq: {e}")
             return Response({"error": "La IA está descansando. Inténtalo de nuevo."}, status=503)

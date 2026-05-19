@@ -1,18 +1,14 @@
 import os
 from pathlib import Path
-from dotenv import load_dotenv  # ✅ Añadir esto
+from dotenv import load_dotenv
 import cloudinary
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ✅ Cargar variables de entorno del archivo .env
 load_dotenv(os.path.join(BASE_DIR.parent, '.env'))
 
-# Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-+zct8zff9shgf*bd+*3$n^eqx_j3w7y$wp^^mxm8tro2@n1%e('
 
-# ✅ DEBUG: True en local, False en Render (producción)
 DEBUG = os.environ.get('DEBUG', 'True') == 'True' if not os.environ.get('RENDER') else False
 
 ALLOWED_HOSTS = ['*']
@@ -65,17 +61,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# 2. Configuración global de seguridad para tu API
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication', # Usaremos Tokens
+        'rest_framework.authentication.TokenAuthentication',
     ]
 }
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+
 
 if os.environ.get('DATABASE_URL'):
-    # Producción (Render)
     import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(
@@ -84,7 +77,6 @@ if os.environ.get('DATABASE_URL'):
         )
     }
 else:
-    # Local
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -112,8 +104,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
+
 
 LANGUAGE_CODE = 'en-us'
 
@@ -124,8 +115,7 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
+
 
 STATIC_URL = '/static/'
 
@@ -136,12 +126,10 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# ─── CONFIGURACIÓN DE ALMACENAMIENTO (LOCAL vs CLOUDINARY) ──────────────────
-# Detectar si estamos en producción (Render) o desarrollo (local)
+
 IS_PRODUCTION = os.environ.get('RENDER') == 'true' or os.environ.get('DATABASE_URL') is not None
 
 if IS_PRODUCTION:
-    # 🚀 PRODUCCIÓN (Render): Usar Cloudinary
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
         'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
@@ -160,7 +148,6 @@ if IS_PRODUCTION:
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
     
-    # Configurar cloudinary.config
     cloudinary.config(
         cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
         api_key=os.environ.get('CLOUDINARY_API_KEY'),
@@ -171,14 +158,12 @@ if IS_PRODUCTION:
     WHITENOISE_USE_FINDERS = True
     WHITENOISE_MANIFEST_STRICT = False
 else:
-    # 💻 DESARROLLO (Local): Usar almacenamiento local
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 
-# Configuración de email (Gmail SMTP)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))

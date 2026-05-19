@@ -40,7 +40,6 @@ class ViajeroUser(HttpUser):
         except:
             pass
 
-    # ── Lectura (peso 5) ─────────────────────────────────────────────────
 
     @task(5)
     def ver_mis_viajes(self):
@@ -62,7 +61,6 @@ class ViajeroUser(HttpUser):
             viaje_id = random.choice(self.viaje_ids)
             self.client.get(f'/api/viaje/{viaje_id}/monumentos/', headers=self._headers())
 
-    # ── Escritura (peso 2) ───────────────────────────────────────────────
 
     @task(2)
     def crear_viaje(self):

@@ -26,7 +26,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f'✅ {len(achievements)} logros creados en el catálogo.'))
 
-        # 2. BUSCAMOS LOS LOGROS EN EL CATÁLOGO
         logro_viaje = Achievement.objects.get(code='primer_viaje')
         logro_social = Achievement.objects.get(code='social')
         logro_foto = Achievement.objects.get(code='fotografo')

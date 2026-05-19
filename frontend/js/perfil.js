@@ -9,10 +9,9 @@ const LOGROS_SISTEMA = [
     { id: 'social',      icon: '👥', name: 'Social',        description: 'Añade tu primer Amigo' },
 ];
 
-// ── INIT ───────────────────────────────────────────────────────────────────
 window.onload = function() {
     if (!token) {
-        alert("Sesión no válida. Redirigiendo al login...");
+        mostrarCustomPopup("❌ Sesión no válida", "Redirigiendo al login...", "error");
         window.location.href = '/';
         return;
     }
@@ -20,7 +19,6 @@ window.onload = function() {
     iniciarEventos();
 };
 
-// ── CARGAR PERFIL ──────────────────────────────────────────────────────────
 function cargarPerfil() {
     fetch(`${API_URL}/perfil/`, {
         headers: { 'Authorization': `Token ${token}` }
@@ -41,7 +39,6 @@ function cargarPerfil() {
         const iniciales = name.split(' ')
             .map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
-        // Sidebar
         document.getElementById('perfil-iniciales').textContent = iniciales;
         document.getElementById('perfil-name-corto').textContent = name;
         document.getElementById('perfil-email-corto').textContent = data.email || 'Sin email';
@@ -51,7 +48,6 @@ function cargarPerfil() {
         document.getElementById('perfil-date-corto').textContent =
             'Miembro desde ' + date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long' });
 
-        // Foto
         if (data.profile_picture) {
             const foto = document.getElementById('perfil-foto');
             foto.src = data.profile_picture;
@@ -59,12 +55,10 @@ function cargarPerfil() {
             document.getElementById('perfil-iniciales').style.display = 'none';
         }
 
-        // Info personal
         document.getElementById('perfil-name').textContent = name;
         document.getElementById('perfil-email').textContent = data.email || '—';
         document.getElementById('perfil-bio').textContent = data.bio || 'Sin biografía';
 
-        // Campos edición
         document.getElementById('edit-name').value = data.first_name || '';
         document.getElementById('edit-apellidos').value = data.last_name || '';
         document.getElementById('edit-bio').value = data.bio || '';
@@ -90,7 +84,6 @@ function cargarPerfil() {
     .catch(err => console.error("Error cargando perfil:", err));
 }
 
-// ── RENDER FRIENDS ──────────────────────────────────────────────────────────
 function renderFriends(friends) {
     const lista = document.getElementById('friends-lista');
     if (!friends || friends.length === 0) {
@@ -115,7 +108,6 @@ function renderFriends(friends) {
     }).join('');
 }
 
-// ── RENDER LOGROS ──────────────────────────────────────────────────────────
 function renderLogros(logrosData) {
     const grid = document.getElementById('logros-grid');
     
@@ -146,7 +138,6 @@ function iniciarEventos() {
         });
     });
 
-    // Subir foto
     document.getElementById('input-foto').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -174,7 +165,6 @@ function iniciarEventos() {
     });
 }
 
-// ── EDITAR PERFIL ──────────────────────────────────────────────────────────
 function toggleEditar() {
     document.getElementById('info-ver').classList.toggle('oculto-perfil');
     document.getElementById('info-editar').classList.toggle('oculto-perfil');
@@ -200,11 +190,10 @@ function guardarPerfil() {
         cargarPerfil();
     })
     .catch(err => {
-        alert('❌ Error al guardar los cambios');
+        mostrarCustomPopup('❌ Error al guardar los cambios', err.message, 'error');
     });
 }
 
-// ── friendS ─────────────────────────────────────────────────────────────────
 function toggleAñadirfriend() {
     const form = document.getElementById('form-añadir-friend');
     form.classList.toggle('oculto-perfil');
@@ -255,7 +244,7 @@ function añadirfriend() {
 
 function eliminarfriend(friendId, btn) {
     mostrarConfirmacionPopup(
-        '¿Eliminar este friend?',
+        '¿Eliminar este amigo?',
         () => {
             fetch(`${API_URL}/friends/eliminar/${friendId}/`, {
                 method: 'DELETE',
@@ -286,12 +275,10 @@ function eliminarfriend(friendId, btn) {
     );
 }
 
-// ── NAVEGACIÓN ─────────────────────────────────────────────────────────────
 function volverAlMapa() {
     window.location.href = '/';
 }
 
-// Popup de confirmación reutilizable
 function mostrarConfirmacionPopup(mensaje, onConfirm) {
     document.querySelectorAll('.custom-popup.confirm').forEach(p => p.remove());
 
@@ -318,7 +305,6 @@ function mostrarConfirmacionPopup(mensaje, onConfirm) {
     };
 }
 
-// Popup de notificación reutilizable
 function mostrarCustomPopup(titulo, mensaje, tipo) {
     const popup = document.createElement('div');
     popup.className = `custom-popup ${tipo}`;

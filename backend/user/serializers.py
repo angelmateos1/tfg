@@ -9,7 +9,6 @@ class friendPerfil(serializers.ModelSerializer):
         fields = ['id', 'username', 'friendship_code', 'profile_picture']
 
     def get_profile_picture(self, obj):
-        # ✅ Devuelve la URL de Cloudinary directamente
         if obj.profile_picture:
             return obj.profile_picture.url
         return None

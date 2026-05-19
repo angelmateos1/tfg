@@ -143,16 +143,13 @@ class AñadirfriendView(APIView):
         if Friendship.objects.filter(user=request.user, friend=friend).exists():
             return Response({"error": "Ya sois friends"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Crear friendships bidireccionales
         Friendship.objects.create(user=request.user, friend=friend)
         Friendship.objects.create(user=friend, friend=request.user)
 
-        # ✅ DESBLOQUEARachievement DE Friendship para el user actual
         achievement_social = Achievement.objects.filter(codigo='social').first()
         if achievement_social:
             UnlockedAchievement.objects.get_or_create(user=request.user,achievement=achievement_social)
 
-        # ✅ DESBLOQUEARachievement DE Friendship para el friend también
         if achievement_social:
             UnlockedAchievement.objects.get_or_create(user=friend,achievement=achievement_social)
 
@@ -198,18 +195,16 @@ class RegistroView(APIView):
         except ValidationError as e:
             return Response({"error": list(e.messages)}, status=400)
 
-        # Crear user
         user = User.objects.create_user(
             username=username,
             email=email,
             password=password
         )
 
-        # Generar token
         token, _ = Token.objects.get_or_create(user=user)
 
         return Response({
-            "mensaje": "usercreated correctamente",
+            "mensaje": "Usuario creado correctamente",
             "token": token.key,
             "username": user.username
         }, status=201)
@@ -229,14 +224,11 @@ class SolicitarRecuperacionView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            # Por seguridad, no revelar si el email existe
             return Response({"mensaje": "Si el email existe, recibirás un código de recuperación"})
 
-        # Generar código
         code = RecoveryCode.generar_codigo()
         RecoveryCode.objects.create(user=user,code=code)
 
-        # Enviar email
         from django.core.mail import send_mail
         from django.conf import settings
         
@@ -270,7 +262,6 @@ class VerificarCodigoView(APIView):
         except User.DoesNotExist:
             return Response({"error": "Email no encontrado"}, status=404)
 
-        # Buscar código válido (no usado, creado en últimos 15 min)
         hace_15_min = timezone.now() - timedelta(minutes=15)
         code_obj = RecoveryCode.objects.filter(
             user=user,
@@ -282,17 +273,14 @@ class VerificarCodigoView(APIView):
         if not code_obj:
             return Response({"error": "Código inválido o expirado"}, status=400)
 
-        # Validar nueva contraseña
         try:
             validate_password(nueva_password)
         except ValidationError as e:
             return Response({"error": list(e.messages)}, status=400)
 
-        # Cambiar contraseña
         user.set_password(nueva_password)
         user.save()
 
-        # Marcar código como usado
         code_obj.usado = True
         code_obj.save()
 

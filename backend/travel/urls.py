@@ -7,7 +7,7 @@ from .views import (
 urlpatterns = [
     path('map-data/', MapStatsView.as_view()),
     path('nuevo-viaje/', ViajeCreateView.as_view()),
-    path('validar-Visit/<int:viaje_id>/', ValidarVisitView.as_view()),
+    path('validar-visita/<int:viaje_id>/', ValidarVisitView.as_view()),
     path('mis-viajes/', MisViajesView.as_view()),
     path('eliminar-viaje/<int:viaje_id>/', EliminarViajeView.as_view()),
     path('viaje/<int:viaje_id>/', DetalleViajeView.as_view()),

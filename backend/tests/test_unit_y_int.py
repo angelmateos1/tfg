@@ -171,14 +171,12 @@ class FriendshipTests(TestCase):
 
 # ═══════════════════════════════════════════════════════════════════════════
 # TRAVEL
-# El signal dispara al crear Travel e intenta obtener Achievement
-# concode='primer_viaje', así que hay que crearlo antes en setUp.
 # ═══════════════════════════════════════════════════════════════════════════
 
 class TravelModelTests(TestCase):
 
     def setUp(self):
-        make_logro('primer_viaje')   # ← necesario para el signal
+        make_logro('primer_viaje')
         self.user = make_user()
 
     def test_crear_viaje_basico(self):
@@ -392,14 +390,12 @@ class VisitModelTests(TestCase):
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ROUTE (itinerario del viaje)
-# Cada viaje tiene UN solo itinerario guardado como Route.
-# El patrónused en las vistas es update_or_create por name.
 # ═══════════════════════════════════════════════════════════════════════════
 
 class RouteModelTests(TestCase):
 
     def setUp(self):
-        make_logro('primer_viaje')   # ← necesario para el signal
+        make_logro('primer_viaje')
         self.user   = make_user()
         self.travel = make_travel(self.user)
 

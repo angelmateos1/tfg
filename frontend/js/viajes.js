@@ -1,22 +1,16 @@
 const token = localStorage.getItem('sofia_token');
 let viajeActual = null;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INICIALIZACIÓN
-// ═══════════════════════════════════════════════════════════════════════════
 
 window.onload = function() {
     if (!token) {
-        alert("Sesión no válida. Redirigiendo al login...");
+        mostrarCustomPopup("❌ Sesión no válida", "Redirigiendo al login...", "error");
         window.location.href = '/';
         return;
     }
     cargarViajes();
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CARGAR Y RENDERIZAR VIAJES
-// ═══════════════════════════════════════════════════════════════════════════
 
 function cargarViajes() {
     fetch(`${API_URL}/mis-viajes/`, {
@@ -54,7 +48,6 @@ function renderViajes(viajes) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    // Separar viajes
     const futuros = viajes.filter(v => new Date(v.start_date) > hoy);
     const pasados = viajes.filter(v => new Date(v.end_date) < hoy);
     const enCurso = viajes.filter(v => {
@@ -65,7 +58,6 @@ function renderViajes(viajes) {
 
     let html = '';
 
-    // PRÓXIMOS VIAJES
     if (futuros.length > 0 || enCurso.length > 0) {
         html += '<h2 class="seccion-titulo">Próximos Viajes</h2>';
         html += '<div class="viajes-subseccion">';
@@ -75,7 +67,6 @@ function renderViajes(viajes) {
         html += '</div>';
     }
 
-    // VIAJES PASADOS
     if (pasados.length > 0) {
         html += '<h2 class="seccion-titulo">🗺️ Viajes Pasados</h2>';
         html += '<div class="viajes-subseccion">';
@@ -114,8 +105,8 @@ function renderViajeCard(v, hoy) {
     const finFormato = fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
     let botonesAcciones = '';
-    if (esActivo) {
-        botonesAcciones += `<button class="btn-validar" onclick="validarViajeHandler(event, ${v.id})">📍 Validar Visit</button>`;
+    if (esActivo && !v.is_validated) {
+        botonesAcciones += `<button class="btn-validar" onclick="validarViajeHandler(event, ${v.id})">📍 Validar Visita</button>`;
     }
     botonesAcciones += `<button class="btn-eliminar" onclick="eliminarViajeHandler(event, ${v.id})">🗑️ Eliminar</button>`;
 
@@ -146,9 +137,6 @@ function renderViajeCard(v, hoy) {
     `;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// FORMULARIO NUEVO VIAJE
-// ═══════════════════════════════════════════════════════════════════════════
 
 function toggleFormulario() {
     const form = document.getElementById('formulario-nuevo');
@@ -157,12 +145,10 @@ function toggleFormulario() {
     if (!form.classList.contains('oculto-viajes')) {
         document.getElementById('input-destino').focus();
     } else {
-        // Limpiar formulario al cerrar
         document.getElementById('input-destino').value = '';
         document.getElementById('input-inicio').value = '';
         document.getElementById('input-fin').value = '';
         document.getElementById('form-feedback').textContent = '';
-        // Cerrar y limpiar recomendador
         const panel = document.getElementById('recomendador-panel');
         if (panel && !panel.classList.contains('oculto-viajes')) {
             panel.classList.add('oculto-viajes');
@@ -173,9 +159,6 @@ function toggleFormulario() {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════════
-// RECOMENDADOR IA DE DESTINOS
-// ═══════════════════════════════════════════════════════════════════════════
 
 function toggleRecomendador() {
     const panel = document.getElementById('recomendador-panel');
@@ -221,7 +204,6 @@ function pedirRecomendacionIA() {
     .then(data => {
         if (!data.destino) throw new Error('No se recibió ningún destino');
 
-        // Rellenar el campo destino y cerrar el panel
         document.getElementById('input-destino').value = data.destino;
         feedback.textContent = `✅ Destino sugerido: ${data.destino}`;
         feedback.style.color = '#22c55e';
@@ -264,7 +246,6 @@ function guardarViaje() {
     feedback.textContent = '🔍 Buscando ubicación...';
     feedback.style.color = '#3b82f6';
 
-    // Geocodificar con Nominatim
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destino)}&addressdetails=1`)
         .then(res => res.json())
         .then(data => {
@@ -318,9 +299,6 @@ function guardarViaje() {
         });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ACCIONES DE VIAJE
-// ═══════════════════════════════════════════════════════════════════════════
 
 function validarViajeHandler(e, viajeId) {
     e.stopPropagation();
@@ -333,34 +311,50 @@ function eliminarViajeHandler(e, viajeId) {
 }
 
 function eliminarViaje(viajeId) {
-    if (!confirm('¿Seguro que quieres eliminar este viaje?')) return;
-
-    fetch(`${API_URL}/eliminar-viaje/${viajeId}/`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Token ${token}` }
-    })
-    .then(res => {
-        if (res.ok) {
-            cargarViajes();
-        } else {
-            alert('❌ Error al eliminar el viaje');
+    mostrarConfirmacionPopup(
+        '¿Eliminar este viaje?',
+        () => {
+            fetch(`${API_URL}/eliminar-viaje/${viajeId}/`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Token ${token}` }
+            })
+            .then(res => {
+                if (res.ok) {
+                    mostrarCustomPopup(
+                        '🗑️ Viaje eliminado',
+                        'El viaje ha sido eliminado de tu historial.',
+                        'success'
+                    );
+                    cargarViajes(); 
+                } else {
+                    return res.json().then(err => {
+                        throw new Error(err.error || 'Error al eliminar el viaje');
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                mostrarCustomPopup(
+                    '❌ Error',
+                    'No se pudo eliminar el viaje.',
+                    'error'
+                );
+            });
         }
-    })
-    .catch(err => {
-        console.error("Error eliminando viaje:", err);
-        alert('❌ Error al eliminar el viaje');
-    });
+    );
 }
 
 function validarViaje(viajeId) {
-    if (!navigator.geolocation) {
-        alert('❌ Tu navegador no soporta geolocalización');
-        return;
-    }
+    mostrarConfirmacionPopup(
+        '¿Comprobar ubicación y validar visita?',
+        () => {
+            if (!navigator.geolocation) {
+                mostrarCustomPopup('❌ Error', 'Tu navegador no soporta geolocalización', 'error');
+                return;
+            }
 
-    // Encontrar el botón para actualizar su estado
     const btn = document.querySelector(`[onclick*="validarViajeHandler(event, ${viajeId})"]`);
-    const mensajeOriginal = btn ? btn.textContent : '📍 Validar Visit';
+    const mensajeOriginal = btn ? btn.textContent : '📍 Validar Visita';
     if (btn) btn.disabled = true;
     if (btn) btn.textContent = '📍 Obteniendo ubicación...';
 
@@ -371,7 +365,7 @@ function validarViaje(viajeId) {
 
             if (btn) btn.textContent = '⏳ Validando...';
 
-            fetch(`${API_URL}/validar-Visit/${viajeId}/`, {
+            fetch(`${API_URL}/validar-visita/${viajeId}/`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Token ${token}`,
@@ -383,33 +377,41 @@ function validarViaje(viajeId) {
             .then(data => {
                 const distancia = Math.round(data.distancia_metros || 0);
                 
-                // El servidor retorna siempre JSON con los campos mensaje o error
                 if (data.mensaje) {
-                    // Éxito - mostrar alert y recargar
-                    alert(`✅ ${data.mensaje}\n📏 Distancia: ${distancia}m`);
+                    mostrarCustomPopup(
+                                        '✅ ¡Visita validada!', 
+                                        `${data.mensaje} (Distancia: ${distancia}m)`, 
+                                        'success'
+                                    );
                     cargarViajes();
                 } else if (data.error) {
-                    // Error - mostrar alert pero no recargar
-                    alert(`❌ ${data.error}\n📏 Distancia: ${distancia}m`);
+                    mostrarCustomPopup(
+                        '❌ Error',
+                        `${data.error}\n📏 Distancia: ${distancia}m`,
+                        'error'
+                    );
                     if (btn) btn.textContent = mensajeOriginal;
                     if (btn) btn.disabled = false;
                 } else {
-                    // Respuesta inesperada
-                    alert('❌ Error: respuesta del servidor no válida');
+                    mostrarCustomPopup(
+                        '❌ Error',
+                        `${data.error}\n📏 Distancia: ${distancia}m`,
+                        'error'
+                    );
                     if (btn) btn.textContent = mensajeOriginal;
                     if (btn) btn.disabled = false;
                 }
             })
             .catch(err => {
-                console.error("Error validando Visit:", err);
-                alert(`❌ Error al validar la Visit: ${err.message}`);
+                console.error("Error validando Visita:", err);
+                mostrarCustomPopup(`❌ Error al validar la Visita: ${err.message}`, 'error');
                 if (btn) btn.textContent = mensajeOriginal;
                 if (btn) btn.disabled = false;
             });
         },
         error => {
             console.error("Error geolocalización:", error);
-            alert('❌ No se pudo obtener tu ubicación. Activa el GPS y los permisos de ubicación.');
+            mostrarCustomPopup('❌ No se pudo obtener tu ubicación. Activa el GPS y los permisos de ubicación.', 'error');
             if (btn) btn.textContent = mensajeOriginal;
             if (btn) btn.disabled = false;
         },
@@ -417,13 +419,56 @@ function validarViaje(viajeId) {
             enableHighAccuracy: true,
             timeout: 10000,
             maximumAge: 0
-        }
-    );
+        });
+    });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MODAL DETALLE VIAJE
-// ═══════════════════════════════════════════════════════════════════════════
+function mostrarConfirmacionPopup(mensaje, onConfirm) {
+    document.querySelectorAll('.custom-popup.confirm').forEach(p => p.remove());
+
+    const popup = document.createElement('div');
+    popup.className = 'custom-popup confirm';
+
+    popup.innerHTML = `
+        <div class="popup-content">
+            <h4>Confirmar</h4>
+            <p>${mensaje}</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button class="btn-cancelar-popup">Cancelar</button>
+                <button class="btn-confirmar-popup">Confirmar</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    popup.querySelector('.btn-cancelar-popup').onclick = () => popup.remove();
+    popup.querySelector('.btn-confirmar-popup').onclick = () => {
+        popup.remove();
+        onConfirm();
+    };
+}
+
+function mostrarCustomPopup(titulo, mensaje, tipo) {
+    const popup = document.createElement('div');
+    popup.className = `custom-popup ${tipo}`;
+    
+    popup.innerHTML = `
+        <div class="popup-content">
+            <h4>${titulo}</h4>
+            <p>${mensaje}</p>
+            <button onclick="this.parentElement.parentElement.remove()">Aceptar</button>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    setTimeout(() => {
+        if (document.body.contains(popup)) {
+            popup.remove();
+        }
+    }, 4000);
+}
 
 function abrirDetalleViaje(viajeId) {
     fetch(`${API_URL}/viaje/${viajeId}/`, {
@@ -447,26 +492,22 @@ function abrirDetalleViaje(viajeId) {
         const fin = new Date(data.viaje.end_date).toLocaleDateString('es-ES');
         document.getElementById('modal-dates').textContent = `${inicio} - ${fin}`;
         
-        // Itinerario
         let itinerario = '';
         if (data.rutas && data.rutas.length > 0 && data.rutas[0].itinerary) {
             itinerario = data.rutas[0].itinerary;
         }
         document.getElementById('itinerario-texto').value = itinerario;
         
-        // Limpiar feedback
         document.getElementById('itinerario-feedback').textContent = '';
         document.getElementById('monumento-feedback').textContent = '';
         
-        // Cargar monumentos
         cargarMonumentos(viajeId);
         
-        // Mostrar modal
         document.getElementById('modal-detalle').classList.add('activo');
     })
     .catch(err => {
         console.error("Error cargando detalle:", err);
-        alert('❌ Error al cargar el viaje');
+        mostrarCustomPopup('❌ Error al cargar el viaje', err.message, 'error');
     });
 }
 
@@ -474,7 +515,6 @@ function cerrarModalDetalle() {
     document.getElementById('modal-detalle').classList.remove('activo');
     viajeActual = null;
     
-    // Limpiar formulario de monumentos
     const formMonumento = document.getElementById('form-monumento');
     if (!formMonumento.classList.contains('oculto-viajes')) {
         formMonumento.classList.add('oculto-viajes');
@@ -483,9 +523,6 @@ function cerrarModalDetalle() {
     document.getElementById('monumento-feedback').textContent = '';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ITINERARIO
-// ═══════════════════════════════════════════════════════════════════════════
 
 function guardarItinerario() {
     const itinerario = document.getElementById('itinerario-texto').value.trim();
@@ -578,10 +615,6 @@ function generarItinerarioIA() {
     });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MONUMENTOS
-// ═══════════════════════════════════════════════════════════════════════════
-
 function cargarMonumentos(viajeId) {
     fetch(`${API_URL}/viaje/${viajeId}/monumentos/`, {
         headers: { 'Authorization': `Token ${token}` }
@@ -645,7 +678,7 @@ function validarMonumento() {
     const feedback = document.getElementById('monumento-feedback');
 
     if (!name) {
-        feedback.textContent = '❌ Escribe el name del monumento';
+        feedback.textContent = '❌ Escribe el nombre del monumento';
         feedback.style.color = '#ef4444';
         return;
     }
@@ -696,7 +729,6 @@ function validarMonumento() {
                     feedback.style.color = '#22c55e';
                     document.getElementById('input-name-monumento').value = '';
                     
-                    // Recargar lista de monumentos
                     setTimeout(() => {
                         cargarMonumentos(viajeActual.id);
                         toggleFormMonumento();
@@ -723,7 +755,7 @@ function validarMonumento() {
 }
 
 function eliminarMonumento(monumentoId) {
-    if (!confirm('¿Eliminar esta Visit?')) return;
+    if (!confirm('¿Eliminar esta visita?')) return;
 
     fetch(`${API_URL}/eliminar-monumento/${monumentoId}/`, {
         method: 'DELETE',
@@ -733,18 +765,15 @@ function eliminarMonumento(monumentoId) {
         if (res.ok) {
             cargarMonumentos(viajeActual.id);
         } else {
-            alert('❌ Error al eliminar el monumento');
+            mostrarCustomPopup('❌ Error al eliminar el monumento', 'Inténtalo más tarde.', 'error');
         }
     })
     .catch(err => {
         console.error("Error eliminando monumento:", err);
-        alert('❌ Error al eliminar el monumento');
+        mostrarCustomPopup('❌ Error al eliminar el monumento', err.message, 'error');
     });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// NAVEGACIÓN
-// ═══════════════════════════════════════════════════════════════════════════
 
 function volverAlMapa() {
     window.location.href = '/';
