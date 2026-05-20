@@ -434,6 +434,8 @@ function volverAlLogin() {
     document.getElementById('form-login-view').style.display = 'block';
     document.getElementById('form-registro-view').style.display = 'none';
     document.getElementById('form-recuperacion-view').style.display = 'none';
+    document.getElementById('paso-1-recuperacion').style.display = 'none';
+    document.getElementById('paso-2-recuperacion').style.display = 'none';
 }
 
 function enviarCodigoRecuperacion() {
@@ -502,7 +504,7 @@ function verificarCodigoRecuperacion() {
         } else {
             feedback.textContent = '✅ ' + data.mensaje;
             feedback.style.color = '#22c55e';
-            setTimeout(() => mostrarLoginForm(), 2000);
+            setTimeout(() => volverAlLogin(), 2000);
         }
     })
     .catch(err => {
