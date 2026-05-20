@@ -49,14 +49,6 @@ def comprobar_logros_visita_y_fotos(sender, instance, created, **kwargs):
         UnlockedAchievement.objects.get_or_create(user=user, achievement=achievement)
 
 
-    total_fotos = Visit.objects.filter(user=user).exclude(foto='').exclude(foto__isnull=True).count()
-    if total_fotos >= 10:
-        achievement, _ = Achievement.objects.get_or_create(
-            code='fotografo', 
-            defaults={'name': 'Fotógrafo', 'description': 'Sube 10 fotos de viajes', 'icon': '📸'}
-        )
-        UnlockedAchievement.objects.get_or_create(user=user, achievement=achievement)
-
 
 @receiver(post_save, sender=User)
 def comprobar_logros_sociales(sender, instance, **kwargs):

@@ -88,7 +88,12 @@ class RankingView(APIView):
         from travel.models import Travel, Monument
 
         def calcular_puntos(user):
-            paises = Travel.objects.filter(user=user).values('country_code').distinct().count()
+            hoy = timezone.now().date()
+
+            paises = Travel.objects.filter(
+                user=user, 
+                start_date__lte=hoy 
+            ).values('country_code').distinct().count()
             monumentos = Monument.objects.filter(travel__user=user).count()
             return (paises * 10) + (monumentos * 1), paises, monumentos
 
@@ -135,25 +140,25 @@ class AñadirfriendView(APIView):
         try:
             friend = User.objects.get(friendship_code=code)
         except User.DoesNotExist:
-            return Response({"error": "No existe ningún user con ese código"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "No existe ningún usuario con ese código"}, status=status.HTTP_404_NOT_FOUND)
 
         if friend == request.user:
             return Response({"error": "No puedes añadirte a ti mismo"}, status=status.HTTP_400_BAD_REQUEST)
 
         if Friendship.objects.filter(user=request.user, friend=friend).exists():
-            return Response({"error": "Ya sois friends"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Ya sois amigos"}, status=status.HTTP_400_BAD_REQUEST)
 
         Friendship.objects.create(user=request.user, friend=friend)
         Friendship.objects.create(user=friend, friend=request.user)
 
-        achievement_social = Achievement.objects.filter(codigo='social').first()
+        achievement_social = Achievement.objects.filter(code='social').first()
         if achievement_social:
             UnlockedAchievement.objects.get_or_create(user=request.user,achievement=achievement_social)
 
         if achievement_social:
             UnlockedAchievement.objects.get_or_create(user=friend,achievement=achievement_social)
 
-        return Response({"mensaje": f"¡{friend.username} añadido como friend!"})
+        return Response({"mensaje": f"¡{friend.username} añadido como amigo!"})
 
 
 class EliminarfriendView(APIView):
@@ -251,7 +256,7 @@ class SolicitarRecuperacionView(APIView):
 class VerificarCodigoView(APIView):
     def post(self, request):
         email = request.data.get('email', '').strip()
-        code = request.data.get('codigo', '').strip()
+        code = request.data.get('code', '').strip()
         nueva_password = request.data.get('nueva_password', '')
 
         if not email or not code or not nueva_password:

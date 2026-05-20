@@ -203,10 +203,10 @@ function toggleAñadirfriend() {
 }
 
 function añadirfriend() {
-    constcode = document.getElementById('input-codigo-friend').value.trim();
+    const code = document.getElementById('input-codigo-friend').value.trim();
     const feedback = document.getElementById('friend-feedback');
 
-    if (!codigo) {
+    if (!code) {
         feedback.textContent = '❌ Introduce un código';
         feedback.style.color = '#ef4444';
         return;

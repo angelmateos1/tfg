@@ -62,7 +62,7 @@ class ViajeCreateView(APIView):
         serializer = TravelCreateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
-            return Response({"mensaje": "Viajecreated exitosamente"}, status=status.HTTP_201_CREATED)
+            return Response({"mensaje": "Viaje creado exitosamente"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -227,15 +227,25 @@ class ValidarMonumentoView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        """Validar Visit a monumento por geolocalización"""
+        """Validar Visita a monumento por geolocalización"""
         viaje_id = request.data.get('viaje_id')
-        name_monumento = request.data.get('name').strip()
-        user_lat = float(request.data.get('latitud'))
-        user_lon = float(request.data.get('longitud'))
+        name_raw = request.data.get('name')
+        lat_raw = request.data.get('latitud')
+        lon_raw = request.data.get('longitud')
+
+        if not viaje_id or not name_raw or lat_raw is None or lon_raw is None:
+            return Response({"error": "Faltan datos (viaje_id, name, latitud o longitud)."}, status=400)
+
+        name_monumento = str(name_raw).strip()
+
+        try:
+            user_lat = float(lat_raw)
+            user_lon = float(lon_raw)
+        except (TypeError, ValueError):
+            return Response({"error": "Las coordenadas no son válidas."}, status=400)
 
         viaje = get_object_or_404(Travel, id=viaje_id, user=request.user)
 
-        
         from .utils import calcular_distancia
         distancia = calcular_distancia(user_lat, user_lon, viaje.latitude, viaje.longitude)
 
@@ -255,20 +265,21 @@ class ValidarMonumentoView(APIView):
         )
 
         from django.utils import timezone
-        Visit, created_Visit = Visit.objects.get_or_create(
+        
+        visit_exists = Visit.objects.filter(user=request.user, monument=monumento).exists()
+
+        if visit_exists:
+            return Response({
+                "error": "Ya visitaste este monumento"
+            }, status=400)
+
+        Visit.objects.create(
             user=request.user,
             monument=monumento,
-            defaults={
-                'date': timezone.now().date(),
-                'rating': 5,
-                'validation': True
-            }
+            date=timezone.now().date(),
+            rating=5,
+            validation=True
         )
-
-        if not created_Visit:
-            return Response({
-                "error": "Ya Visitste este monumento"
-            }, status=400)
 
         return Response({
             "mensaje": f"¡Visita validada a {name_monumento}!",
